@@ -9,27 +9,18 @@ function App() {
 
   const path = window.location.pathname;
 
-  // Painel administrativo
-  if (path === "/login") {
-    return isLogged ? <DashboardLayout /> : <Login />;
-  }
-
-  // Dashboard após login
-  if (
-    path.startsWith("/dashboard") ||
-    path.startsWith("/orders") ||
-    path.startsWith("/products") ||
-    path.startsWith("/clients")
-  ) {
-    return isLogged ? <DashboardLayout /> : <Login />;
-  }
-
-  // Site institucional
   if (path === "/") {
     return <HomePage />;
   }
 
-  // Catálogos públicos
+  if (path === "/login") {
+    return isLogged ? <DashboardLayout /> : <Login />;
+  }
+
+  if (path.startsWith("/dashboard")) {
+    return isLogged ? <DashboardLayout /> : <Login />;
+  }
+
   return <PublicCatalog />;
 }
 
