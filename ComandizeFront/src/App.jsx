@@ -8,16 +8,16 @@ function App() {
   const [isLogged] = useState(!!localStorage.getItem("token"));
   const path = window.location.pathname;
 
+  if (path === "/") {
+    return <HomePage />;
+  }
+
   if (path === "/login") {
     return isLogged ? <DashboardLayout /> : <Login />;
   }
 
   if (path === "/app" || path === "/dashboard") {
     return isLogged ? <DashboardLayout /> : <Login />;
-  }
-
-  if (path === "/") {
-    return <HomePage />;
   }
 
   return <PublicCatalog />;
