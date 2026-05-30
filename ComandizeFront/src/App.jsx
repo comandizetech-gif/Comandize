@@ -1,19 +1,26 @@
-@@ -0,0 +1,18 @@
 import { useState } from "react";
 import Login from "./pages/Login";
 import DashboardLayout from "./layouts/DashboardLayout";
 import PublicCatalog from "./pages/PublicCatalog";
+import HomePage from "./pages/HomePage";
 
 function App() {
   const [isLogged] = useState(!!localStorage.getItem("token"));
-
   const path = window.location.pathname;
 
-  if (path !== "/") {
-    return <PublicCatalog />;
+  if (path === "/login") {
+    return isLogged ? <DashboardLayout /> : <Login />;
   }
 
-  return isLogged ? <DashboardLayout /> : <Login />;
+  if (path === "/app" || path === "/dashboard") {
+    return isLogged ? <DashboardLayout /> : <Login />;
+  }
+
+  if (path === "/") {
+    return <HomePage />;
+  }
+
+  return <PublicCatalog />;
 }
 
 export default App;
