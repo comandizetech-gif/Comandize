@@ -753,7 +753,91 @@ function Products() {
           </button>
         </form>
 
-        <div className="overflow-x-auto">
+        <div className="md:hidden space-y-3">
+          {products.map((product) => {
+            const margin = calculateMargin(product, marginMode);
+            const stock = Number(product.stock || 0);
+
+            return (
+              <div key={product._id} className="bg-white border border-[#e5e7eb] rounded-2xl p-4 shadow-sm">
+                <div className="flex gap-3">
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-[#f9fafb] border border-[#e5e7eb] flex items-center justify-center text-2xl shrink-0">📦</div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-black text-[#1f2937] truncate">{product.name}</h3>
+                        <p className="text-xs text-[#6b7280] truncate">SKU: {product.sku || "-"} • {product.productType || "Sem tipo"}</p>
+                      </div>
+                      <span className={`shrink-0 px-2 py-1 rounded-full text-[11px] font-black ${product.active === false ? "bg-red-500 text-white" : "bg-green-500 text-white"}`}>
+                        {product.active === false ? "Inativo" : "Ativo"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                      <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-2">
+                        <p className="text-[11px] text-[#6b7280]">Venda</p>
+                        <strong className="text-[#ff9811]">{formatMoney(product.salePrice)}</strong>
+                      </div>
+                      <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-2">
+                        <p className="text-[11px] text-[#6b7280]">Estoque</p>
+                        <strong className={stock <= 0 ? "text-red-500" : "text-[#1f2937]"}>{formatNumber(stock)}</strong>
+                      </div>
+                      <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-2">
+                        <p className="text-[11px] text-[#6b7280]">Entrada</p>
+                        <strong>{formatMoney(product.entryPrice)}</strong>
+                      </div>
+                      <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-2">
+                        <p className="text-[11px] text-[#6b7280]">Margem</p>
+                        <strong className="text-[#ff9811]">{marginMode === "fixed" ? formatMoney(margin) : `${margin.toFixed(2)}%`}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <details className="mt-3 bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-3">
+                  <summary className="font-black text-[#ff9811] cursor-pointer">Mais informações</summary>
+                  <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-[#374151]">
+                    <p><strong>Preço cliente:</strong> {product.clientPrice ? formatMoney(product.clientPrice) : "-"}</p>
+                    <p><strong>Quebra:</strong> {Number(product.lossPercent || 0) > 0 ? `${formatNumber(product.lossPercent)}%` : "-"}</p>
+                    <p><strong>Empresa:</strong> {product.companyName || "-"}</p>
+                    <p><strong>Código de barras:</strong> {product.barcode || "-"}</p>
+                    <p><strong>Receita:</strong> {product.recipeEnabled ? "Ativa" : "-"}</p>
+                  </div>
+                </details>
+
+                <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                  <input
+                    type="number"
+                    step="0.001"
+                    placeholder="Acrescentar estoque"
+                    value={stockToAdd[product._id] || ""}
+                    onChange={(e) => setStockToAdd({ ...stockToAdd, [product._id]: e.target.value })}
+                    className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 outline-none text-[#374151] placeholder:text-[#9ca3af]"
+                  />
+                  <button type="button" onClick={() => handleAddStock(product._id)} className="bg-blue-500 text-white px-4 rounded-xl font-black">+</button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <button type="button" onClick={() => handleEdit(product)} className="bg-[#ff9811] text-white px-4 py-3 rounded-xl font-black text-sm">Editar</button>
+                  <button type="button" onClick={() => handleDelete(product._id)} className="bg-red-500 text-white px-4 py-3 rounded-xl font-black text-sm">Excluir</button>
+                </div>
+              </div>
+            );
+          })}
+
+          {loading && <p className="text-[#6b7280] mt-4">Carregando produtos...</p>}
+
+          {!loading && products.length === 0 && (
+            <p className="text-[#6b7280] mt-4">Nenhum produto encontrado.</p>
+          )}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left min-w-[1280px]">
             <thead className="text-[#374151] border-b border-[#e5e7eb]">
               <tr>

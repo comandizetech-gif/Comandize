@@ -57,18 +57,11 @@ function BenefitImage({ src, alt }) {
 
 function LoyaltyPreview({ onClick, compact = false, disabled = false }) {
   const content = (
-    <div className={`${compact ? "mt-4" : "mt-8"} space-y-3`}>
+    <div className={`${compact ? "mt-4" : "space-y-3"}`}>
       <BenefitImage src="/icons/fidelidade.png" alt="Programa de fidelidade" />
 
-      {!compact && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <BenefitImage src="/icons/acumulecard.png" alt="Acumule pontos" />
-          <BenefitImage src="/icons/refcard.png" alt="Indique amigos e ganhe" />
-        </div>
-      )}
-
       {!disabled && (
-        <p className="text-center text-sm font-black text-red-600">
+        <p className="text-center text-sm font-black text-red-600 mt-3">
           Toque para se cadastrar e participar
         </p>
       )}
@@ -865,18 +858,56 @@ ${checkout.storeMessage || "Sem observação"}
         </div>
 
         {/* FAIXA MOBILE */}
-        <button
-          onClick={customer ? handleOpenBenefits : handleOpenRegister}
-          className="md:hidden w-full bg-red-600 text-white px-4 py-3 flex items-center justify-between"
-        >
-          <span className="font-black text-sm truncate">
-            {customer ? `Bem-vindo, ${customer.name}` : "Cadastre-se"}
-          </span>
+        <div className="md:hidden w-full bg-white border-b border-zinc-200 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-zinc-500 leading-tight">
+                {customer ? "Bem-vindo" : "Programa de fidelidade"}
+              </p>
+              <p className="text-sm font-black text-[#20242b] truncate">
+                {customer ? customer.name : "Cadastre-se e ganhe benefícios"}
+              </p>
+            </div>
 
-          <span className="text-xs font-bold shrink-0 ml-3">
-            {customer ? "Ver benefícios" : "Entrar agora"}
-          </span>
-        </button>
+            {customer ? (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleOpenBenefits}
+                  className="bg-red-600 text-white px-3 py-2 rounded-full text-xs font-black shadow-sm"
+                >
+                  Benefícios
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenLogin}
+                  className="bg-zinc-900 text-white px-3 py-2 rounded-full text-xs font-black shadow-sm"
+                >
+                  Minha conta
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleOpenRegister}
+                  className="bg-red-600 text-white px-3 py-2 rounded-full text-xs font-black shadow-sm"
+                >
+                  Cadastrar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenLogin}
+                  className="bg-zinc-900 text-white px-3 py-2 rounded-full text-xs font-black shadow-sm"
+                >
+                  Entrar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* BANNER */}
         <div className="relative h-[220px] md:h-[320px] overflow-hidden">
@@ -1296,76 +1327,82 @@ ${checkout.storeMessage || "Sem observação"}
         </div>
       )}
 
-      <main className="p-5 md:p-8 max-w-6xl mx-auto space-y-12">
-        {sections.map((section) => (
-          <section key={section._id}>
-            <h2 className="text-3xl md:text-4xl font-black text-red-600 mb-2">
-              {section.name}
-            </h2>
+      <main className="p-5 md:p-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+          <div className="space-y-12">
+            {sections.map((section) => (
+              <section key={section._id}>
+                <h2 className="text-3xl md:text-4xl font-black text-red-600 mb-2">
+                  {section.name}
+                </h2>
 
-            <div className="h-1 bg-red-600 w-24 mb-6 rounded-full" />
+                <div className="h-1 bg-red-600 w-24 mb-6 rounded-full" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {section.products.map((item) => {
-                const product = item.product;
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {section.products.map((item) => {
+                    const product = item.product;
 
-                if (!product) return null;
+                    if (!product) return null;
 
-                return (
-                  <div
-                    key={item._id}
-                    className="bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden flex relative min-h-[160px]"
-                  >
-                    {product.image && (
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-36 md:w-44 h-auto object-cover object-center"
-                      />
-                    )}
+                    return (
+                      <div
+                        key={item._id}
+                        className="bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden flex relative min-h-[160px]"
+                      >
+                        {product.image && (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-36 md:w-44 h-auto object-cover object-center"
+                          />
+                        )}
 
-                    <div className="p-4 md:p-5 flex-1 pr-20">
-                      <h3 className="text-lg md:text-xl font-black text-[#20242b]">
-                        {product.name}
-                      </h3>
+                        <div className="p-4 md:p-5 flex-1 pr-20">
+                          <h3 className="text-lg md:text-xl font-black text-[#20242b]">
+                            {product.name}
+                          </h3>
 
-                      {item.description && (
-                        <p className="text-zinc-500 text-sm mt-1">
-                          {item.description}
-                        </p>
-                      )}
+                          {item.description && (
+                            <p className="text-zinc-500 text-sm mt-1">
+                              {item.description}
+                            </p>
+                          )}
 
-                      <p className="text-red-600 text-2xl font-black mt-3">
-                        {formatMoney(getProductPrice(product, customer))}
-                      </p>
+                          <p className="text-red-600 text-2xl font-black mt-3">
+                            {formatMoney(getProductPrice(product, customer))}
+                          </p>
 
-                      {customer && Number(product.clientPrice || 0) > 0 && (
-                        <p className="text-xs font-bold text-green-600 mt-1">
-                          Preço especial para cliente
-                        </p>
-                      )}
-                    </div>
+                          {customer && Number(product.clientPrice || 0) > 0 && (
+                            <p className="text-xs font-bold text-green-600 mt-1">
+                              Preço especial para cliente
+                            </p>
+                          )}
+                        </div>
 
-                    <button
-                      onClick={() => openItemModal(item)}
-                      className="absolute right-5 bottom-5 bg-red-600 hover:bg-red-700 text-white w-16 h-16 rounded-full font-black text-4xl shadow-xl flex items-center justify-center hover:scale-110 transition"
-                    >
-                      +
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                        <button
+                          onClick={() => openItemModal(item)}
+                          className="absolute right-5 bottom-5 bg-red-600 hover:bg-red-700 text-white w-16 h-16 rounded-full font-black text-4xl shadow-xl flex items-center justify-center hover:scale-110 transition"
+                        >
+                          +
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
 
-        {sections.length === 0 && (
-          <p className="text-zinc-500">Nenhum produto disponível no catálogo.</p>
-        )}
+            {sections.length === 0 && (
+              <p className="text-zinc-500">Nenhum produto disponível no catálogo.</p>
+            )}
+          </div>
 
-        {!customer && (
-          <LoyaltyPreview onClick={handleOpenRegister} />
-        )}
+          {!customer && (
+            <aside className="lg:sticky lg:top-6">
+              <LoyaltyPreview onClick={handleOpenRegister} />
+            </aside>
+          )}
+        </div>
       </main>
 
       {cartQuantity > 0 && (

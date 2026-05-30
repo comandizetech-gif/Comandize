@@ -204,7 +204,7 @@ function Delivery() {
   const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [searchOrder, setSearchOrder] = useState("");
-  const [activeTab, setActiveTab] = useState("edit");
+  const [activeTab, setActiveTab] = useState("view");
   const [productSearch, setProductSearch] = useState("");
   const [productResults, setProductResults] = useState([]);
   const [manualProductSearch, setManualProductSearch] = useState("");
@@ -340,7 +340,7 @@ function Delivery() {
     setProductSearch("");
     setProductResults([]);
     setSelectedDeliveryPersonId(order.assignedDeliveryPerson?._id || order.assignedDeliveryPerson || "");
-    setActiveTab("edit");
+    setActiveTab("view");
   };
 
   const closeOrder = () => {
@@ -349,7 +349,7 @@ function Delivery() {
     setProductSearch("");
     setProductResults([]);
     setSelectedDeliveryPersonId("");
-    setActiveTab("edit");
+    setActiveTab("view");
   };
 
   const searchProducts = async (value, mode = "edit") => {
@@ -804,34 +804,96 @@ A gramagem recalcula o preço proporcionalmente usando o preço de venda/base do
               <button onClick={closeOrder} className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl text-sm font-bold">Voltar</button>
             </div>
 
-            <div className="px-5 pt-4 grid grid-cols-2 gap-2 shrink-0">
-              <button onClick={() => setActiveTab("edit")} className={`p-3 rounded-xl text-sm font-black ${activeTab === "edit" ? "bg-[#ff9811] text-white" : "bg-[#f9fafb]"}`}>✏️ Editar pedido</button>
+            <div className="px-5 pt-4 grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0">
+              <button onClick={() => setActiveTab("view")} className={`p-3 rounded-xl text-sm font-black ${activeTab === "view" ? "bg-[#ff9811] text-white" : "bg-[#f9fafb]"}`}>👁️ Visualizar</button>
+              <button onClick={() => setActiveTab("edit")} className={`p-3 rounded-xl text-sm font-black ${activeTab === "edit" ? "bg-[#ff9811] text-white" : "bg-[#f9fafb]"}`}>✏️ Editar dados</button>
+              <button onClick={() => setActiveTab("products")} className={`p-3 rounded-xl text-sm font-black ${activeTab === "products" ? "bg-[#ff9811] text-white" : "bg-[#f9fafb]"}`}>🛒 Produtos</button>
               <button onClick={() => setActiveTab("finish")} className={`p-3 rounded-xl text-sm font-black ${activeTab === "finish" ? "bg-[#ff9811] text-white" : "bg-[#f9fafb]"}`}>✅ Finalização</button>
             </div>
 
-            {activeTab === "edit" && (
-              <div className="p-5 flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-4 overflow-hidden">
-                <div className="space-y-3 overflow-y-auto pr-2">
-                  <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-3">
-                    <h3 className="font-black text-[#ff9811] mb-3 text-sm">👤 Dados do cliente</h3>
-                    <div className="grid grid-cols-1 gap-2">
-                      <input value={editingOrder.customer?.name || ""} onChange={(e) => setEditingOrder({ ...editingOrder, customer: { ...editingOrder.customer, name: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm" />
-                      <input value={editingOrder.customer?.whatsapp || ""} onChange={(e) => setEditingOrder({ ...editingOrder, customer: { ...editingOrder.customer, whatsapp: onlyNumbers(e.target.value) } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm" />
-                      <select value={editingOrder.type} onChange={(e) => setEditingOrder({ ...editingOrder, type: e.target.value })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm"><option value="ENTREGA">🛵 ENTREGA</option><option value="RETIRADA">🏪 RETIRADA</option></select>
-                      <input type="time" value={editingOrder.scheduledTime} onChange={(e) => setEditingOrder({ ...editingOrder, scheduledTime: e.target.value })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm" />
-                      <select value={editingOrder.status} onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm">{statusOptions.filter((s) => s !== "TODOS").map((status) => <option key={status} value={status}>{status}</option>)}</select>
+            {activeTab === "view" && (
+              <div className="p-5 flex-1 min-h-0 overflow-y-auto">
+                <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-4">
+                  <div className="space-y-3">
+                    <div className="bg-[#fff7ed] border border-orange-100 rounded-2xl shadow-sm p-4">
+                      <h3 className="font-black text-[#ff9811] mb-3 text-sm">📌 Informações do pedido</h3>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><p className="text-[#6b7280] text-xs">Cliente</p><p className="font-black">{editingOrder.customer?.name || "Cliente"}</p></div>
+                        <div><p className="text-[#6b7280] text-xs">WhatsApp</p><p className="font-black">{editingOrder.customer?.whatsapp || "-"}</p></div>
+                        <div><p className="text-[#6b7280] text-xs">Tipo</p><p className="font-black">{editingOrder.type === "ENTREGA" ? "🛵 Entrega" : "🏪 Retirada"}</p></div>
+                        <div><p className="text-[#6b7280] text-xs">Horário</p><p className="font-black">{editingOrder.scheduledTime || "-"}</p></div>
+                        <div><p className="text-[#6b7280] text-xs">Status</p><p className="font-black">{editingOrder.status || "PENDENTE"}</p></div>
+                        <div><p className="text-[#6b7280] text-xs">Total</p><p className="font-black text-[#ff9811]">{formatMoney(editingOrder.total)}</p></div>
+                      </div>
+                    </div>
+
+                    {editingOrder.type === "ENTREGA" && (
+                      <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-4">
+                        <h3 className="font-black text-[#ff9811] mb-3 text-sm">📍 Endereço de entrega</h3>
+                        <p className="text-sm font-bold">{editingOrder.address?.street || "Rua não informada"}, {editingOrder.address?.houseNumber || "S/N"}</p>
+                        <p className="text-sm text-[#6b7280]">{editingOrder.address?.neighborhood || "Bairro não informado"}</p>
+                        {editingOrder.address?.cep && <p className="text-sm text-[#6b7280]">CEP: {editingOrder.address.cep}</p>}
+                      </div>
+                    )}
+
+                    <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-4">
+                      <h3 className="font-black text-[#ff9811] mb-3 text-sm">🎁 Cliente e fidelidade</h3>
+                      <div className="space-y-2 text-sm text-[#6b7280]">
+                        <p>{panelInfo.isRegisteredCustomer ? "✅ Cliente cadastrado" : "⚠️ Cliente não cadastrado"}</p>
+                        <p>Pontos previstos: <strong className="text-[#ff9811]">{panelInfo.pointsToEarn || 0}</strong></p>
+                        <p>Cashback usado: <strong className="text-green-600">{formatMoney(panelInfo.cashbackUsed || 0)}</strong></p>
+                        <p>Indicação: <strong>{panelInfo.referralCodeUsed || "Nenhuma"}</strong></p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => setActiveTab("edit")} className="bg-[#ff9811] text-white p-3 rounded-xl font-black text-sm">✏️ Editar dados</button>
+                      <button onClick={() => setActiveTab("products")} className="bg-[#f3f4f6] border border-[#d1d5db] text-[#374151] p-3 rounded-xl font-black text-sm">🛒 Editar itens</button>
                     </div>
                   </div>
 
+                  <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-4">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <h3 className="font-black text-[#ff9811] text-sm">🛒 Itens do pedido ({editingOrder.items?.length || 0})</h3>
+                      <button onClick={() => setActiveTab("products")} className="bg-[#ff9811] text-white px-3 py-2 rounded-xl font-black text-xs">Editar produtos</button>
+                    </div>
+                    <div className="space-y-2 max-h-[48vh] overflow-y-auto pr-1">
+                      {(editingOrder.items || []).map((item, index) => (
+                        <div key={index} className="flex gap-3 items-center bg-[#f9fafb] border border-[#e5e7eb] rounded-2xl p-3">
+                          {item.image ? <img src={item.image} alt={item.name} className="w-14 h-14 rounded-xl object-cover bg-white" /> : <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center">🍽️</div>}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-black text-sm truncate">{item.quantity}x {item.name}</p>
+                            <p className="text-xs text-[#6b7280]">{item.weight ? formatWeight(item.weight) : "Unidade"}</p>
+                            {item.observation && <p className="text-xs text-[#6b7280] truncate">Obs: {item.observation}</p>}
+                          </div>
+                          <p className="font-black text-[#ff9811] text-sm shrink-0">{formatMoney(item.subtotal)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t border-[#e5e7eb] mt-4 pt-4 space-y-1 text-sm">
+                      <div className="flex justify-between"><span>Subtotal</span><strong>{formatMoney(editingOrder.subtotal)}</strong></div>
+                      <div className="flex justify-between"><span>Desconto</span><strong>{formatMoney(editingOrder.discount)}</strong></div>
+                      <div className="flex justify-between"><span>Taxa entrega</span><strong>{formatMoney(editingOrder.deliveryFee)}</strong></div>
+                      <div className="flex justify-between"><span>Taxa extra</span><strong>{formatMoney(editingOrder.extraFee)}</strong></div>
+                      <div className="flex justify-between text-xl text-[#ff9811] pt-2"><span className="font-black">Total</span><strong>{formatMoney(editingOrder.total)}</strong></div>
+                    </div>
+                    <button onClick={() => setActiveTab("finish")} className="w-full mt-4 bg-green-500 text-white p-4 rounded-xl font-black">Ir para finalização</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "edit" && (
+              <div className="p-5 flex-1 min-h-0 overflow-y-auto">
+                <div className="max-w-2xl mx-auto space-y-3">
                   <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-3">
-                    <h3 className="font-black text-[#ff9811] mb-2 text-sm">🎁 Cliente e fidelidade</h3>
-                    <div className="grid grid-cols-1 gap-2 text-sm text-[#6b7280]">
-                      <p>{panelInfo.isRegisteredCustomer ? "✅ Cliente cadastrado" : "⚠️ Cliente não cadastrado"}</p>
-                      <p>Pontos previstos nesta compra: <strong className="text-[#ff9811]">{panelInfo.pointsToEarn || 0}</strong></p>
-                      <p>Cashback usado: <strong className="text-green-400">{formatMoney(panelInfo.cashbackUsed || 0)}</strong></p>
-                      <p>Indicação usada: <strong>{panelInfo.referralCodeUsed || "Nenhuma"}</strong></p>
-                      <p>Cashback para indicador: <strong className="text-green-400">{formatMoney(panelInfo.referralCashbackPreview || 0)}</strong></p>
-                      {panelInfo.referredBy && <p>Indicador: {panelInfo.referredBy.name} • {panelInfo.referredBy.whatsapp}</p>}
+                    <h3 className="font-black text-[#ff9811] mb-3 text-sm">👤 Dados do cliente</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      <input value={editingOrder.customer?.name || ""} onChange={(e) => setEditingOrder({ ...editingOrder, customer: { ...editingOrder.customer, name: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                      <input value={editingOrder.customer?.whatsapp || ""} onChange={(e) => setEditingOrder({ ...editingOrder, customer: { ...editingOrder.customer, whatsapp: onlyNumbers(e.target.value) } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                      <select value={editingOrder.type} onChange={(e) => setEditingOrder({ ...editingOrder, type: e.target.value })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm"><option value="ENTREGA">🛵 ENTREGA</option><option value="RETIRADA">🏪 RETIRADA</option></select>
+                      <input type="time" value={editingOrder.scheduledTime} onChange={(e) => setEditingOrder({ ...editingOrder, scheduledTime: e.target.value })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                      <select value={editingOrder.status} onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm">{statusOptions.filter((s) => s !== "TODOS").map((status) => <option key={status} value={status}>{status}</option>)}</select>
                     </div>
                   </div>
 
@@ -839,9 +901,9 @@ A gramagem recalcula o preço proporcionalmente usando o preço de venda/base do
                     <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-3">
                       <h3 className="font-black text-[#ff9811] mb-2 text-sm">📍 Endereço</h3>
                       <div className="grid grid-cols-1 gap-2">
-                        <input placeholder="Rua" value={editingOrder.address?.street || ""} onChange={(e) => setEditingOrder({ ...editingOrder, address: { ...editingOrder.address, street: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2 text-sm" />
-                        <input placeholder="Bairro" value={editingOrder.address?.neighborhood || ""} onChange={(e) => setEditingOrder({ ...editingOrder, address: { ...editingOrder.address, neighborhood: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2 text-sm" />
-                        <input placeholder="Número" value={editingOrder.address?.houseNumber || ""} onChange={(e) => setEditingOrder({ ...editingOrder, address: { ...editingOrder.address, houseNumber: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2 text-sm" />
+                        <input placeholder="Rua" value={editingOrder.address?.street || ""} onChange={(e) => setEditingOrder({ ...editingOrder, address: { ...editingOrder.address, street: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                        <input placeholder="Bairro" value={editingOrder.address?.neighborhood || ""} onChange={(e) => setEditingOrder({ ...editingOrder, address: { ...editingOrder.address, neighborhood: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                        <input placeholder="Número" value={editingOrder.address?.houseNumber || ""} onChange={(e) => setEditingOrder({ ...editingOrder, address: { ...editingOrder.address, houseNumber: e.target.value } })} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
                       </div>
                     </div>
                   )}
@@ -849,24 +911,31 @@ A gramagem recalcula o preço proporcionalmente usando o preço de venda/base do
                   <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-3">
                     <h3 className="font-black text-[#ff9811] mb-2 text-sm">💰 Taxas</h3>
                     <div className="grid grid-cols-1 gap-2">
-                      <input type="number" placeholder="Desconto" value={editingOrder.discount || ""} onChange={(e) => updateCharge("discount", e.target.value)} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm" />
-                      <input type="number" placeholder="Entrega" value={editingOrder.deliveryFee || ""} onChange={(e) => updateCharge("deliveryFee", e.target.value)} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm" />
-                      <input type="number" placeholder="Extra" value={editingOrder.extraFee || ""} onChange={(e) => updateCharge("extraFee", e.target.value)} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm" />
+                      <input type="number" placeholder="Desconto" value={editingOrder.discount || ""} onChange={(e) => updateCharge("discount", e.target.value)} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                      <input type="number" placeholder="Entrega" value={editingOrder.deliveryFee || ""} onChange={(e) => updateCharge("deliveryFee", e.target.value)} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                      <input type="number" placeholder="Extra" value={editingOrder.extraFee || ""} onChange={(e) => updateCharge("extraFee", e.target.value)} className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
                     </div>
                   </div>
-                </div>
 
-                <div className="flex flex-col min-h-0 gap-3 overflow-hidden">
-                  <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-3 shrink-0">
-                    <h3 className="font-black text-[#ff9811] mb-2 text-sm">🛒 Adicionar produto</h3>
-                    <input placeholder="Buscar produto por nome ou SKU" value={productSearch} onChange={(e) => searchProducts(e.target.value)} className="w-full bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-2.5 text-sm" />
-                    {productResults.length > 0 && <div className="mt-2 bg-[#f9fafb] rounded-xl overflow-hidden">{productResults.map((product) => <button key={product._id} onClick={() => addProduct(product)} className="w-full text-left p-2 hover:bg-[#fff7ed] flex justify-between text-sm"><span>{product.name}<small className="block text-[#6b7280]">SKU: {product.sku}</small></span><strong className="text-[#ff9811]">{formatMoney(product.salePrice)}</strong></button>)}</div>}
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto pr-1">{renderItemsEditor(editingOrder)}</div>
-                  <div className="shrink-0 border-t border-[#e5e7eb] pt-3 flex items-center justify-between gap-3">
+                  <div className="sticky bottom-0 bg-white border-t border-[#e5e7eb] pt-3 flex items-center justify-between gap-3">
                     <div><p className="text-xs text-[#6b7280]">Total do pedido</p><p className="text-2xl font-black text-[#ff9811]">{formatMoney(editingOrder.total)}</p></div>
                     <div className="flex gap-2"><button onClick={saveOrder} className="bg-[#ff9811] text-white px-4 py-3 rounded-xl text-sm font-black">Salvar</button><button onClick={() => deleteOrder(editingOrder._id)} className="bg-red-500 px-4 py-3 rounded-xl text-sm font-black">Excluir</button></div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "products" && (
+              <div className="p-5 flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
+                <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-3 shrink-0">
+                  <h3 className="font-black text-[#ff9811] mb-2 text-sm">🛒 Adicionar produto</h3>
+                  <input placeholder="Buscar produto por nome ou SKU" value={productSearch} onChange={(e) => searchProducts(e.target.value)} className="w-full bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 text-sm" />
+                  {productResults.length > 0 && <div className="mt-2 bg-[#f9fafb] rounded-xl overflow-hidden">{productResults.map((product) => <button key={product._id} onClick={() => addProduct(product)} className="w-full text-left p-2 hover:bg-[#fff7ed] flex justify-between text-sm"><span>{product.name}<small className="block text-[#6b7280]">SKU: {product.sku}</small></span><strong className="text-[#ff9811]">{formatMoney(product.salePrice)}</strong></button>)}</div>}
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto pr-1">{renderItemsEditor(editingOrder)}</div>
+                <div className="shrink-0 border-t border-[#e5e7eb] pt-3 flex items-center justify-between gap-3">
+                  <div><p className="text-xs text-[#6b7280]">Total do pedido</p><p className="text-2xl font-black text-[#ff9811]">{formatMoney(editingOrder.total)}</p></div>
+                  <button onClick={saveOrder} className="bg-[#ff9811] text-white px-5 py-3 rounded-xl text-sm font-black">Salvar alterações</button>
                 </div>
               </div>
             )}

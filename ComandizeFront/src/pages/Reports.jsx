@@ -427,6 +427,8 @@ function OrdersList({ orders }) {
 
 function ProductReport({ report, page, onPage }) {
   const cards = report.cards || {};
+  const products = report.products || [];
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -436,27 +438,163 @@ function ProductReport({ report, page, onPage }) {
         <Card title="Custo da quebra" value={formatMoney(cards.totalLossCost)} icon="⚠️" />
       </div>
 
-      <div className="bg-white border border-[#e5e7eb] rounded-2xl p-5 shadow-sm overflow-x-auto">
-        <h4 className="font-black text-[#ff9811] mb-4">📦 Produtos vendidos</h4>
-        <table className="w-full text-left min-w-[1180px]">
-          <thead className="border-b border-[#e5e7eb] text-slate-600">
-            <tr>
-              <th className="p-3">Produto</th><th className="p-3">Código</th><th className="p-3">Qtd/Peso</th><th className="p-3">Preço venda</th><th className="p-3">Margem</th><th className="p-3">Bruto vendido</th><th className="p-3">Custo</th><th className="p-3">Lucro</th><th className="p-3">Quebra custo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(report.products || []).map((product) => <tr key={product.productId} className="border-b border-slate-200"><td className="p-3 font-bold">{product.name}</td><td className="p-3">{product.sku || "-"}</td><td className="p-3">{formatNumber(product.quantitySold)}</td><td className="p-3">{formatMoney(product.salePrice)}</td><td className="p-3 text-[#ff9811] font-black">{formatMoney(product.marginValue)} <span className="text-xs text-slate-500">({Number(product.marginPercent || 0).toFixed(1)}%)</span></td><td className="p-3">{formatMoney(product.grossSales)}</td><td className="p-3">{formatMoney(product.totalCost)}</td><td className="p-3 text-green-400 font-black">{formatMoney(product.profit)}</td><td className="p-3 text-red-500">{formatMoney(product.lossCost)}</td></tr>)}
-          </tbody>
-        </table>
-        {(!report.products || report.products.length === 0) && <p className="text-slate-600 mt-4">Nenhum produto vendido no período.</p>}
-        <div className="flex items-center justify-between gap-3 mt-5">
-          <button disabled={page <= 1} onClick={() => onPage(page - 1)} className="bg-[#f8fafc] disabled:opacity-50 px-5 py-3 rounded-xl font-bold">Página anterior</button>
-          <span className="text-sm text-slate-600">Página {report.page} de {report.totalPages} • {report.total} produto(s)</span>
-          <button disabled={page >= report.totalPages} onClick={() => onPage(page + 1)} className="bg-[#f8fafc] disabled:opacity-50 px-5 py-3 rounded-xl font-bold">Próxima página</button>
+      <div className="bg-white border border-[#e5e7eb] rounded-2xl p-4 md:p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
+          <div>
+            <h4 className="font-black text-[#ff9811] text-lg">📦 Produtos vendidos</h4>
+            <p className="text-xs md:text-sm text-slate-500">
+              No celular a lista vira cards para evitar barra lateral.
+            </p>
+          </div>
+
+          <span className="bg-[#fff7ed] text-[#ff9811] border border-orange-100 rounded-full px-3 py-1 text-xs font-black w-fit">
+            {report.total || 0} produto(s)
+          </span>
         </div>
+
+        {/* MOBILE: cards sem scroll lateral */}
+        <div className="md:hidden space-y-3">
+          {products.map((product) => (
+            <ProductMobileCard key={product.productId} product={product} />
+          ))}
+        </div>
+
+        {/* DESKTOP/TABLET: tabela normal */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left min-w-[1180px]">
+            <thead className="border-b border-[#e5e7eb] text-slate-600">
+              <tr>
+                <th className="p-3">Produto</th>
+                <th className="p-3">Código</th>
+                <th className="p-3">Qtd/Peso</th>
+                <th className="p-3">Preço venda</th>
+                <th className="p-3">Margem</th>
+                <th className="p-3">Bruto vendido</th>
+                <th className="p-3">Custo</th>
+                <th className="p-3">Lucro</th>
+                <th className="p-3">Quebra custo</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {products.map((product) => (
+                <tr key={product.productId} className="border-b border-slate-200">
+                  <td className="p-3 font-bold">{product.name}</td>
+                  <td className="p-3">{product.sku || "-"}</td>
+                  <td className="p-3">{formatNumber(product.quantitySold)}</td>
+                  <td className="p-3">{formatMoney(product.salePrice)}</td>
+                  <td className="p-3 text-[#ff9811] font-black">
+                    {formatMoney(product.marginValue)}
+                    <span className="text-xs text-slate-500"> ({Number(product.marginPercent || 0).toFixed(1)}%)</span>
+                  </td>
+                  <td className="p-3">{formatMoney(product.grossSales)}</td>
+                  <td className="p-3">{formatMoney(product.totalCost)}</td>
+                  <td className="p-3 text-green-500 font-black">{formatMoney(product.profit)}</td>
+                  <td className="p-3 text-red-500">{formatMoney(product.lossCost)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {products.length === 0 && (
+          <p className="text-slate-600 mt-4">Nenhum produto vendido no período.</p>
+        )}
+
+        <PaginationFooter report={report} page={page} onPage={onPage} />
       </div>
     </>
   );
 }
+
+function ProductMobileCard({ product }) {
+  return (
+    <div className="bg-[#f8fafc] border border-[#e5e7eb] rounded-2xl p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h5 className="font-black text-[#1f2937] text-sm leading-tight break-words">
+            {product.name}
+          </h5>
+          <p className="text-xs text-slate-500 mt-1">
+            Código: <strong>{product.sku || "-"}</strong>
+          </p>
+        </div>
+
+        <div className="bg-white border border-[#e5e7eb] rounded-xl px-3 py-2 text-right shrink-0">
+          <p className="text-[10px] text-slate-500 font-bold">Qtd/Peso</p>
+          <p className="font-black text-[#ff9811] text-sm">{formatNumber(product.quantitySold)}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
+        <InfoBox label="Preço venda" value={formatMoney(product.salePrice)} />
+        <InfoBox label="Bruto vendido" value={formatMoney(product.grossSales)} />
+        <InfoBox label="Custo" value={formatMoney(product.totalCost)} />
+        <InfoBox label="Quebra custo" value={formatMoney(product.lossCost)} danger />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="bg-white border border-orange-100 rounded-xl p-3">
+          <p className="text-[11px] text-slate-500 font-bold">Margem</p>
+          <p className="text-[#ff9811] font-black text-sm">
+            {formatMoney(product.marginValue)}
+          </p>
+          <p className="text-[11px] text-slate-500">
+            {Number(product.marginPercent || 0).toFixed(1)}%
+          </p>
+        </div>
+
+        <div className="bg-white border border-green-100 rounded-xl p-3">
+          <p className="text-[11px] text-slate-500 font-bold">Lucro</p>
+          <p className="text-green-600 font-black text-sm">
+            {formatMoney(product.profit)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoBox({ label, value, danger = false }) {
+  return (
+    <div className="bg-white border border-[#e5e7eb] rounded-xl p-3 min-w-0">
+      <p className="text-[11px] text-slate-500 font-bold">{label}</p>
+      <p className={`font-black text-sm break-words ${danger ? "text-red-500" : "text-[#1f2937]"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function PaginationFooter({ report, page, onPage }) {
+  const totalPages = Number(report.totalPages || 1);
+
+  return (
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-5">
+      <span className="text-xs md:text-sm text-slate-600 text-center md:text-left order-1 md:order-2">
+        Página {report.page || page} de {totalPages} • {report.total || 0} produto(s)
+      </span>
+
+      <div className="grid grid-cols-2 gap-2 order-2 md:order-1 md:flex">
+        <button
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+          className="bg-[#f8fafc] border border-[#e5e7eb] disabled:opacity-50 px-4 md:px-5 py-3 rounded-xl font-bold text-sm"
+        >
+          Anterior
+        </button>
+
+        <button
+          disabled={page >= totalPages}
+          onClick={() => onPage(page + 1)}
+          className="bg-[#ff9811] text-white disabled:opacity-50 px-4 md:px-5 py-3 rounded-xl font-bold text-sm"
+        >
+          Próxima
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 export default Reports;

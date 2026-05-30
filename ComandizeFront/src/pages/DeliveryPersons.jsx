@@ -430,7 +430,54 @@ function DeliveryPersons() {
         </button>
       </form>
 
-      <div className="bg-white border border-[#e5e7eb] rounded-2xl p-5 shadow-sm overflow-x-auto">
+      <div className="md:hidden space-y-3">
+        {deliveryPersons.map((deliveryPerson) => (
+          <div key={deliveryPerson._id} className="bg-white border border-[#e5e7eb] rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="font-black text-lg text-[#1f2937] truncate">🛻 {deliveryPerson.name}</h3>
+                <p className="text-sm text-slate-500 mt-1">📱 {deliveryPerson.whatsapp}</p>
+              </div>
+              <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-black ${deliveryPerson.active ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
+                {deliveryPerson.active ? "Ativo" : "Não ativo"}
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+              <div className="bg-[#f8fafc] border border-[#e5e7eb] rounded-xl p-3">
+                <p className="text-slate-500 text-xs">Salário</p>
+                <strong>{formatMoney(deliveryPerson.salary)}</strong>
+              </div>
+              <div className="bg-[#f8fafc] border border-[#e5e7eb] rounded-xl p-3">
+                <p className="text-slate-500 text-xs">Ganho/KM</p>
+                <strong>{formatMoney(deliveryPerson.earningPerKm)}</strong>
+              </div>
+              <div className="bg-[#f8fafc] border border-[#e5e7eb] rounded-xl p-3">
+                <p className="text-slate-500 text-xs">% entrega</p>
+                <strong>{Number(deliveryPerson.deliveryPercent || 0)}%</strong>
+              </div>
+              <div className="bg-[#f8fafc] border border-[#e5e7eb] rounded-xl p-3">
+                <p className="text-slate-500 text-xs">Endereço</p>
+                <strong className="block truncate">{deliveryPerson.address || "-"}</strong>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 mt-4">
+              <button onClick={() => fillForm(deliveryPerson)} className="bg-[#ff9811] text-white px-4 py-3 rounded-xl font-black text-sm">Editar</button>
+              <button onClick={() => toggleStatus(deliveryPerson._id)} className="bg-blue-500 text-white px-4 py-3 rounded-xl font-black text-sm">
+                {deliveryPerson.active ? "Inativar" : "Ativar"}
+              </button>
+              <button onClick={() => deleteDeliveryPerson(deliveryPerson._id)} className="bg-red-500 text-white px-4 py-3 rounded-xl font-black text-sm">Excluir</button>
+            </div>
+          </div>
+        ))}
+
+        {deliveryPersons.length === 0 && (
+          <div className="bg-white border border-[#e5e7eb] rounded-2xl p-5 text-slate-500 shadow-sm">Nenhum entregador cadastrado.</div>
+        )}
+      </div>
+
+      <div className="hidden md:block bg-white border border-[#e5e7eb] rounded-2xl p-5 shadow-sm overflow-x-auto">
         <table className="w-full text-left min-w-[1050px]">
           <thead className="text-slate-600 border-b border-[#e5e7eb]">
             <tr>
