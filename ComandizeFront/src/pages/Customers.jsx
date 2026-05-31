@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_URL = "http://localhost:3000/api/customers/admin";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://comandize.com.br";
+  
 const PAGE_SIZE = 20;
 
 function onlyNumbers(value = "") {
