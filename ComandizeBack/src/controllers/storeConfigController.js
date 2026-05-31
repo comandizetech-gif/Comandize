@@ -1,8 +1,58 @@
+import fs from "fs/promises";
+import path from "path";
 import sharp from "sharp";
 import StoreConfig from "../models/StoreConfig.js";
 
 const dayKeys = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
 const todayKeyString = () => new Date().toISOString().slice(0, 10);
+
+const UPLOAD_DIR = path.resolve("uploads", "store-banners");
+const PUBLIC_UPLOAD_PREFIX = "/uploads/store-banners";
+
+function safeId(value) {
+  return String(value || "")
+    .replace(/[^a-zA-Z0-9_-]/g, "")
+    .slice(0, 80);
+}
+
+function isLocalUpload(value = "") {
+  return String(value).startsWith(PUBLIC_UPLOAD_PREFIX);
+}
+
+async function removeOldUploadIfNeeded(oldPath) {
+  try {
+    if (!isLocalUpload(oldPath)) return;
+    const filename = path.basename(oldPath);
+    await fs.unlink(path.join(UPLOAD_DIR, filename));
+  } catch {
+    // Ignora se o arquivo antigo não existir.
+  }
+}
+
+async function saveBannerImage(file, userId) {
+  if (!file) return "";
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+  if (!allowedTypes.includes(file.mimetype)) {
+    const error = new Error("Formato de imagem inválido. Use JPEG, PNG ou WEBP.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+
+  const filename = `${safeId(userId)}-${Date.now()}.jpg`;
+  const absolutePath = path.join(UPLOAD_DIR, filename);
+
+  await sharp(file.buffer)
+    .rotate()
+    .resize({ width: 1600, withoutEnlargement: true })
+    .jpeg({ quality: 75, mozjpeg: true })
+    .toFile(absolutePath);
+
+  return `${PUBLIC_UPLOAD_PREFIX}/${filename}`;
+}
 
 function getScheduleStatus(config) {
   if (!config) return false;
@@ -131,22 +181,12 @@ export const updateCatalogStatus = async (req, res) => {
 export const updateMyStoreConfig = async (req, res) => {
   try {
     const { title, subtitle, address, schedules, manualCatalogStatus } = req.body;
-
-    let bannerImage;
-
-    if (req.file) {
-      const compressedImage = await sharp(req.file.buffer)
-        .resize({ width: 1600, withoutEnlargement: true })
-        .jpeg({ quality: 75 })
-        .toBuffer();
-
-      bannerImage = `data:image/jpeg;base64,${compressedImage.toString("base64")}`;
-    }
+    const currentConfig = await StoreConfig.findOne({ user: req.user._id });
 
     const updateData = {
-      title: title?.slice(0, 80),
-      subtitle: subtitle?.slice(0, 120),
-      address: address?.slice(0, 160),
+      title: String(title || "").slice(0, 80),
+      subtitle: String(subtitle || "").slice(0, 120),
+      address: String(address || "").slice(0, 160),
     };
 
     if (["AUTO", "OPEN", "CLOSED"].includes(manualCatalogStatus)) {
@@ -154,16 +194,27 @@ export const updateMyStoreConfig = async (req, res) => {
       updateData.manualCatalogDate = manualCatalogStatus === "AUTO" ? "" : todayKeyString();
     }
 
-    if (schedules) updateData.schedules = typeof schedules === "string" ? JSON.parse(schedules) : schedules;
-    if (bannerImage) updateData.bannerImage = bannerImage;
+    if (schedules) {
+      updateData.schedules = typeof schedules === "string" ? JSON.parse(schedules) : schedules;
+    }
 
-    const config = await StoreConfig.findOneAndUpdate({ user: req.user._id }, updateData, {
-      new: true,
-      upsert: true,
-    });
+    if (req.file) {
+      const newBannerPath = await saveBannerImage(req.file, req.user._id);
+      updateData.bannerImage = newBannerPath;
+      await removeOldUploadIfNeeded(currentConfig?.bannerImage);
+    }
+
+    const config = await StoreConfig.findOneAndUpdate(
+      { user: req.user._id },
+      updateData,
+      { new: true, upsert: true }
+    );
 
     return res.json({ message: "Configurações atualizadas com sucesso.", config });
   } catch (error) {
-    return res.status(500).json({ message: "Erro ao atualizar configurações.", error: error.message });
+    return res.status(error.statusCode || 500).json({
+      message: error.statusCode ? error.message : "Erro ao atualizar configurações.",
+      error: error.message,
+    });
   }
 };

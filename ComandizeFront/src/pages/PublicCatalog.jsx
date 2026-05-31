@@ -6,6 +6,19 @@ import {
   FaCreditCard,
 } from "react-icons/fa";
 
+const API_BASE_URL = "http://localhost:3000";
+
+function getAssetUrl(path = "") {
+  if (!path) return "";
+  if (path.startsWith("data:") || path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  if (path.startsWith("/uploads")) {
+    return `${API_BASE_URL}${path}`;
+  }
+  return path;
+}
+
 const daysLabels = {
   domingo: "Domingo",
   segunda: "Segunda",
@@ -106,7 +119,7 @@ function BenefitsPage({ customer, onClose, onRegister }) {
         <div className="p-5 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <BenefitImage src="/icons/acumulecard.png" alt="Acumule pontos" />
-            <BenefitImage src="/icons/refcard.png" alt="Referencie e ganhe" />
+            <BenefitImage src="/icons/referenciacard.png" alt="Referencie e ganhe" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -225,7 +238,7 @@ function PublicCatalog() {
   const catalogUrl = window.location.pathname.replace("/", "");
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/catalog/${catalogUrl}`)
+    fetch(`${API_BASE_URL}/api/catalog/${catalogUrl}`)
       .then((res) => res.json())
       .then((data) => {
         setStore(data.store);
@@ -341,7 +354,7 @@ function PublicCatalog() {
         new URLSearchParams(window.location.search).get("ref") || "";
 
       const response = await fetch(
-        `http://localhost:3000/api/customers/register/${catalogUrl}`,
+        `${API_BASE_URL}/api/customers/register/${catalogUrl}`,
         {
           method: "POST",
           headers: {
@@ -402,7 +415,7 @@ function PublicCatalog() {
       }
 
       const response = await fetch(
-        `http://localhost:3000/api/customers/login/${catalogUrl}`,
+        `${API_BASE_URL}/api/customers/login/${catalogUrl}`,
         {
           method: "POST",
           headers: {
@@ -442,7 +455,7 @@ function PublicCatalog() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/customers/referral/${customer._id}`
+        `${API_BASE_URL}/api/customers/referral/${customer._id}`
       );
       const data = await response.json();
 
@@ -654,7 +667,7 @@ function PublicCatalog() {
     };
 
     const response = await fetch(
-      `http://localhost:3000/api/orders/public/${catalogUrl}`,
+      `${API_BASE_URL}/api/orders/public/${catalogUrl}`,
       {
         method: "POST",
         headers: {
@@ -913,7 +926,7 @@ ${checkout.storeMessage || "Sem observação"}
         <div className="relative h-[220px] md:h-[320px] overflow-hidden">
           {config?.bannerImage ? (
             <img
-              src={config.bannerImage}
+              src={getAssetUrl(config.bannerImage)}
               alt="Banner"
               className="w-full h-full object-cover object-center"
             />
@@ -1351,7 +1364,7 @@ ${checkout.storeMessage || "Sem observação"}
                       >
                         {product.image && (
                           <img
-                            src={product.image}
+                            src={getAssetUrl(product.image)}
                             alt={product.name}
                             className="w-36 md:w-44 h-auto object-cover object-center"
                           />
@@ -1419,7 +1432,7 @@ ${checkout.storeMessage || "Sem observação"}
           <div className="bg-white text-[#20242b] rounded-2xl w-full max-w-2xl overflow-hidden max-h-[95vh] overflow-y-auto">
             {selectedItem.product.image && (
               <img
-                src={selectedItem.product.image}
+                src={getAssetUrl(selectedItem.product.image)}
                 alt={selectedItem.product.name}
                 className="w-full h-64 object-cover object-center"
               />
@@ -1726,7 +1739,7 @@ ${checkout.storeMessage || "Sem observação"}
                       <div className="flex gap-3">
                         {item.image && (
                           <img
-                            src={item.image}
+                            src={getAssetUrl(item.image)}
                             alt={item.name}
                             className="w-16 h-16 object-cover object-center rounded-xl"
                           />

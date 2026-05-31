@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import sharp from "sharp";
 import Product from "../models/Product.js";
 
@@ -7,6 +10,40 @@ const PRODUCT_CREATE_LIMIT = 20;
 const PRODUCT_CREATE_WINDOW_MS = 60 * 1000;
 
 const createBuckets = new Map();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const UPLOAD_ROOT = path.join(__dirname, "..", "..", "uploads");
+const PRODUCT_UPLOAD_DIR = path.join(UPLOAD_ROOT, "products");
+
+function ensureProductUploadDir() {
+  fs.mkdirSync(PRODUCT_UPLOAD_DIR, { recursive: true });
+}
+
+function slugify(value = "produto") {
+  return String(value || "produto")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase()
+    .slice(0, 60) || "produto";
+}
+
+function deleteLocalImage(imagePath = "") {
+  try {
+    if (!imagePath || !imagePath.startsWith("/uploads/products/")) return;
+
+    const fileName = path.basename(imagePath);
+    const absolutePath = path.join(PRODUCT_UPLOAD_DIR, fileName);
+
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+    }
+  } catch {
+    // Não trava a operação se falhar ao apagar arquivo antigo.
+  }
+}
 
 function cleanString(value = "", limit = 80) {
   return String(value || "").trim().slice(0, limit);
@@ -80,7 +117,7 @@ function checkProductCreateLimit(userId) {
   return true;
 }
 
-async function compressImage(file) {
+async function saveProductImage(file, productName = "produto") {
   if (!file) return "";
 
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -91,13 +128,18 @@ async function compressImage(file) {
     throw error;
   }
 
-  const compressedImage = await sharp(file.buffer)
+  ensureProductUploadDir();
+
+  const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${slugify(productName)}.jpg`;
+  const absolutePath = path.join(PRODUCT_UPLOAD_DIR, fileName);
+
+  await sharp(file.buffer)
     .rotate()
     .resize({ width: 700, withoutEnlargement: true })
     .jpeg({ quality: 65, mozjpeg: true })
-    .toBuffer();
+    .toFile(absolutePath);
 
-  return `data:image/jpeg;base64,${compressedImage.toString("base64")}`;
+  return `/uploads/products/${fileName}`;
 }
 
 function buildProductPayload(body, { editing = false } = {}) {
@@ -230,12 +272,12 @@ export const createProduct = async (req, res) => {
 
     if (validationError) return res.status(400).json({ message: validationError });
 
-    const imageBase64 = await compressImage(req.file);
+    const imagePath = await saveProductImage(req.file, payload.name);
 
     const product = await Product.create({
       user: req.user._id,
       ...payload,
-      image: imageBase64,
+      image: imagePath,
     });
 
     await product.populate([
@@ -365,7 +407,9 @@ export const updateProduct = async (req, res) => {
     });
 
     if (req.file) {
-      product.image = await compressImage(req.file);
+      const oldImage = product.image;
+      product.image = await saveProductImage(req.file, payload.name || product.name);
+      deleteLocalImage(oldImage);
     }
 
     await product.save();
@@ -406,6 +450,8 @@ export const deleteProduct = async (req, res) => {
     const product = await Product.findOneAndDelete({ _id: req.params.id, user: req.user._id });
 
     if (!product) return res.status(404).json({ message: "Produto não encontrado." });
+
+    deleteLocalImage(product.image);
 
     return res.json({ message: "Produto excluído com sucesso." });
   } catch (error) {
