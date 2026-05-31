@@ -1507,7 +1507,7 @@ ${checkout.storeMessage || "Sem observação"}
 
               {getAvailableCuts(selectedItem).length > 0 && (
                 <div className="mt-5">
-                  <h3 className="font-black mb-2">Escolha o corte</h3>
+                  <h3 className="font-black mb-2">Escolha o Preparo</h3>
 
                   {message && (
                     <p className="text-red-500 text-sm mb-2">{message}</p>
@@ -1531,7 +1531,7 @@ ${checkout.storeMessage || "Sem observação"}
                   </div>
 
                   <p className="text-xs text-zinc-500 mt-2">
-                    Quando houver mais de uma opção, escolha o corte desejado antes de adicionar ao carrinho.
+                    Escolha opição, antes de adicionar ao carrinho.
                   </p>
                 </div>
               )}
