@@ -1,5 +1,18 @@
 import mongoose from "mongoose";
 
+const cutOptions = [
+  "Nenhum",
+  "Bife",
+  "Moida",
+  "Picadinho",
+  "Assado",
+  "Congelado",
+  "Strogonof",
+  "Corte Grelha",
+  "Quente",
+  "Gelado",
+];
+
 const catalogItemSchema = new mongoose.Schema(
   {
     product: {
@@ -25,9 +38,10 @@ const catalogItemSchema = new mongoose.Schema(
       default: [],
     },
 
-    tags: {
+    cuts: {
       type: [String],
-      default: [],
+      enum: cutOptions,
+      default: ["Nenhum"],
     },
 
     priority: {

@@ -135,7 +135,12 @@ function calculatePriceByWeight(item, nextWeight) {
 
 function buildReceiptText(order) {
   const itemsText = (order.items || [])
-    .map((item) => `${item.quantity}x ${item.name}${item.weight ? ` (${formatWeight(item.weight)})` : ""} - ${formatMoney(item.subtotal)}`)
+    .map(
+      (item) =>
+        `${item.quantity}x ${item.name}${item.weight ? ` (${formatWeight(item.weight)})` : ""}${
+          item.cut ? ` - Corte: ${item.cut}` : ""
+        } - ${formatMoney(item.subtotal)}`
+    )
     .join("\n");
 
   return `
@@ -167,7 +172,13 @@ ${order.storeMessage || "Sem observação"}
 
 function buildDeliveryPersonMessage(order) {
   const itemsText = (order.items || [])
-    .map((item) => `• ${item.quantity}x ${item.name}${item.weight ? ` (${formatWeight(item.weight)})` : ""}`)
+    .map(
+      (item) =>
+        `• ${item.quantity}x ${item.name}${item.weight ? ` (${formatWeight(item.weight)})` : ""}${
+          item.cut ? `
+  Corte: ${item.cut}` : ""
+        }`
+    )
     .join("\n");
 
   return `
@@ -626,6 +637,11 @@ function Delivery() {
                   {hasRecipe && <small className="bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-bold">Receita/kit</small>}
                   {Number(item.lossPercent || 0) > 0 && <small className="bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full font-bold">Quebra {Number(item.lossPercent || 0).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%</small>}
                 </div>
+                {item.cut && (
+                  <small className="text-[#6b7280] block mt-1">
+                    Corte: <strong>{item.cut}</strong>
+                  </small>
+                )}
                 <small className="text-[#6b7280] block mt-1">Subtotal: {formatMoney(item.subtotal)}</small>
               </div>
 
@@ -864,6 +880,7 @@ A gramagem recalcula o preço proporcionalmente usando o preço de venda/base do
                           <div className="flex-1 min-w-0">
                             <p className="font-black text-sm truncate">{item.quantity}x {item.name}</p>
                             <p className="text-xs text-[#6b7280]">{item.weight ? formatWeight(item.weight) : "Unidade"}</p>
+                            {item.cut && <p className="text-xs text-[#6b7280] truncate">Corte: {item.cut}</p>}
                             {item.observation && <p className="text-xs text-[#6b7280] truncate">Obs: {item.observation}</p>}
                           </div>
                           <p className="font-black text-[#ff9811] text-sm shrink-0">{formatMoney(item.subtotal)}</p>

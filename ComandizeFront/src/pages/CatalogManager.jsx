@@ -3,6 +3,20 @@ import { FaCog } from "react-icons/fa";
 
 const API_URL = "http://localhost:3000/api/catalog-manager";
 
+
+const cutOptions = [
+  "Nenhum",
+  "Bife",
+  "Moida",
+  "Picadinho",
+  "Assado",
+  "Congelado",
+  "Strogonof",
+  "Corte Grelha",
+  "Quente",
+  "Gelado",
+];
+
 const days = [
   { key: "domingo", label: "Dom" },
   { key: "segunda", label: "Seg" },
@@ -182,7 +196,7 @@ function CatalogManager() {
     setConfigForm({
       description: item.description || "",
       weightOptions: (item.weightOptions || []).join(", "),
-      tags: (item.tags || []).join(", "),
+      cuts: item.cuts && item.cuts.length > 0 ? item.cuts : ["Nenhum"],
       priority: item.priority || 0,
       availableDays:
         item.availableDays && item.availableDays.length > 0
@@ -261,6 +275,28 @@ function CatalogManager() {
         availableDays: [...currentDays, dayKey],
       });
     }
+  };
+
+  const toggleCut = (cut) => {
+    const currentCuts = configForm.cuts || ["Nenhum"];
+
+    if (cut === "Nenhum") {
+      setConfigForm({ ...configForm, cuts: ["Nenhum"] });
+      return;
+    }
+
+    let nextCuts = currentCuts.filter((item) => item !== "Nenhum");
+
+    if (nextCuts.includes(cut)) {
+      nextCuts = nextCuts.filter((item) => item !== cut);
+    } else {
+      nextCuts = [...nextCuts, cut];
+    }
+
+    setConfigForm({
+      ...configForm,
+      cuts: nextCuts.length > 0 ? nextCuts : ["Nenhum"],
+    });
   };
 
   return (
@@ -456,18 +492,37 @@ function CatalogManager() {
                         </div>
                       )}
 
-                      <input
-                        type="text"
-                        placeholder="Filtros/tags. Ex: carne moida, bovina, promoção"
-                        value={configForm.tags || ""}
-                        onChange={(e) =>
-                          setConfigForm({
-                            ...configForm,
-                            tags: e.target.value,
-                          })
-                        }
-                        className="bg-white border border-gray-300 rounded-xl p-3 text-gray-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                      />
+                      <div className="md:col-span-2">
+                        <p className="text-sm text-gray-600 font-semibold mb-2">
+                          Cortes do produto
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
+                          {cutOptions.map((cut) => {
+                            const selectedCuts = configForm.cuts || ["Nenhum"];
+                            const isSelected = selectedCuts.includes(cut);
+
+                            return (
+                              <button
+                                key={cut}
+                                type="button"
+                                onClick={() => toggleCut(cut)}
+                                className={`px-4 py-2 rounded-xl text-sm font-black border transition ${
+                                  isSelected
+                                    ? "bg-orange-500 border-orange-500 text-white"
+                                    : "bg-white border-gray-300 text-gray-600 hover:border-orange-300"
+                                }`}
+                              >
+                                {cut}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <p className="text-xs text-gray-500 mt-2">
+                          Deixe "Nenhum" para produto sem corte. Se marcar dois ou mais cortes, o cliente será obrigado a escolher um corte no catálogo.
+                        </p>
+                      </div>
 
                       <input
                         type="number"

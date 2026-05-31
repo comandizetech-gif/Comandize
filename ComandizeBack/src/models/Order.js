@@ -8,6 +8,7 @@ const orderItemSchema = new mongoose.Schema(
     price: { type: Number, required: true, default: 0, min: 0 },
     quantity: { type: Number, required: true, min: 1, max: 30, default: 1 },
     weight: { type: Number, default: null },
+    cut: { type: String, maxlength: 40, default: "", trim: true },
     observation: { type: String, maxlength: 250, default: "", trim: true },
     subtotal: { type: Number, required: true, default: 0, min: 0 },
   },

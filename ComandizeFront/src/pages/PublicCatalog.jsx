@@ -6,7 +6,7 @@ import {
   FaCreditCard,
 } from "react-icons/fa";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://comandize.com.br";
 
 function getAssetUrl(path = "") {
   if (!path) return "";
@@ -53,6 +53,21 @@ function getProductPrice(product, customer) {
 
 function onlyNumbers(value = "") {
   return String(value).replace(/\D/g, "");
+}
+
+function getAvailableCuts(item) {
+  const rawCuts = item?.cuts || item?.cutOptions || [];
+
+  const cuts = Array.isArray(rawCuts)
+    ? rawCuts
+    : String(rawCuts || "")
+        .split(",")
+        .map((cut) => cut.trim());
+
+  return cuts
+    .map((cut) => String(cut || "").trim())
+    .filter(Boolean)
+    .filter((cut) => cut.toLowerCase() !== "nenhum");
 }
 
 
@@ -209,6 +224,7 @@ function PublicCatalog() {
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedWeight, setSelectedWeight] = useState("");
+  const [selectedCut, setSelectedCut] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [observation, setObservation] = useState("");
 
@@ -473,6 +489,7 @@ function PublicCatalog() {
   const openItemModal = (item) => {
     setSelectedItem(item);
     setSelectedWeight("");
+    setSelectedCut("");
     setQuantity(1);
     setObservation("");
     setMessage("");
@@ -481,6 +498,7 @@ function PublicCatalog() {
   const closeItemModal = () => {
     setSelectedItem(null);
     setSelectedWeight("");
+    setSelectedCut("");
     setQuantity(1);
     setObservation("");
     setMessage("");
@@ -519,9 +537,15 @@ function PublicCatalog() {
 
     const product = selectedItem.product;
     const hasWeight = selectedItem.weightOptions?.length > 0;
+    const availableCuts = getAvailableCuts(selectedItem);
 
     if (hasWeight && !selectedWeight) {
       setMessage("Escolha uma opção de peso antes de adicionar.");
+      return;
+    }
+
+    if (availableCuts.length > 1 && !selectedCut) {
+      setMessage("Escolha o corte antes de adicionar.");
       return;
     }
 
@@ -539,6 +563,7 @@ function PublicCatalog() {
       price: getItemUnitPrice(),
       quantity,
       weight: selectedWeight ? Number(selectedWeight) : null,
+      cut: availableCuts.length === 1 ? availableCuts[0] : selectedCut,
       observation,
     };
 
@@ -659,6 +684,7 @@ function PublicCatalog() {
         price: item.price,
         quantity: item.quantity,
         weight: item.weight,
+        cut: item.cut || "",
         observation: item.observation,
       })),
       discount: cashbackDiscount,
@@ -704,7 +730,7 @@ function PublicCatalog() {
       .map((item) => {
         return `• ${item.quantity}x ${item.name}${
           item.weight ? ` (${formatWeight(item.weight)})` : ""
-        } - ${formatMoney(item.price * item.quantity)}${
+        } - ${formatMoney(item.price * item.quantity)}${item.cut ? `\n  Corte: ${item.cut}` : ""}${
           item.observation ? `\n  Obs: ${item.observation}` : ""
         }`;
       })
@@ -1479,6 +1505,37 @@ ${checkout.storeMessage || "Sem observação"}
                 </div>
               )}
 
+              {getAvailableCuts(selectedItem).length > 0 && (
+                <div className="mt-5">
+                  <h3 className="font-black mb-2">Escolha o corte</h3>
+
+                  {message && (
+                    <p className="text-red-500 text-sm mb-2">{message}</p>
+                  )}
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {getAvailableCuts(selectedItem).map((cut) => (
+                      <button
+                        key={cut}
+                        type="button"
+                        onClick={() => setSelectedCut(cut)}
+                        className={`border rounded-xl p-3 text-sm font-black ${
+                          selectedCut === cut || (getAvailableCuts(selectedItem).length === 1 && !selectedCut)
+                            ? "border-red-600 bg-red-50 text-red-600"
+                            : "border-zinc-200 text-zinc-700"
+                        }`}
+                      >
+                        {cut}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="text-xs text-zinc-500 mt-2">
+                    Quando houver mais de uma opção, escolha o corte desejado antes de adicionar ao carrinho.
+                  </p>
+                </div>
+              )}
+
               {!selectedItem.weightOptions?.length && (
                 <p className="text-2xl font-black text-red-600 mt-4">
                   {formatMoney(getProductPrice(selectedItem.product, customer))}
@@ -1751,6 +1808,12 @@ ${checkout.storeMessage || "Sem observação"}
                           {item.weight && (
                             <p className="text-sm text-zinc-500">
                               Peso: {formatWeight(item.weight)}
+                            </p>
+                          )}
+
+                          {item.cut && (
+                            <p className="text-sm text-zinc-500">
+                              Corte: {item.cut}
                             </p>
                           )}
 

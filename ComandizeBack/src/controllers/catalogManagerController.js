@@ -1,6 +1,19 @@
 import CatalogSection from "../models/CatalogSection.js";
 import Product from "../models/Product.js";
 
+const cutOptions = [
+  "Nenhum",
+  "Bife",
+  "Moida",
+  "Picadinho",
+  "Assado",
+  "Congelado",
+  "Strogonof",
+  "Corte Grelha",
+  "Quente",
+  "Gelado",
+];
+
 const normalizeTextArray = (value) => {
   if (!value) return [];
 
@@ -12,6 +25,16 @@ const normalizeTextArray = (value) => {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+};
+
+const normalizeCutArray = (value) => {
+  const values = normalizeTextArray(value).filter((item) => cutOptions.includes(item));
+
+  if (values.length === 0 || values.includes("Nenhum")) {
+    return ["Nenhum"];
+  }
+
+  return [...new Set(values)];
 };
 
 const normalizeNumberArray = (value) => {
@@ -140,7 +163,7 @@ export const addProductToSection = async (req, res) => {
       visible: true,
       description: "",
       weightOptions: product.measureType === "KILO" ? [500, 600, 700, 1000] : [],
-      tags: [],
+      cuts: ["Nenhum"],
       priority: 0,
       availableDays: [
         "domingo",
@@ -195,10 +218,8 @@ export const updateCatalogItem = async (req, res) => {
       item.weightOptions = normalizeNumberArray(req.body.weightOptions);
     }
 
-    if (req.body.tags !== undefined) {
-      item.tags = normalizeTextArray(req.body.tags).map((tag) =>
-        tag.toLowerCase()
-      );
+    if (req.body.cuts !== undefined) {
+      item.cuts = normalizeCutArray(req.body.cuts);
     }
 
     if (req.body.priority !== undefined) {

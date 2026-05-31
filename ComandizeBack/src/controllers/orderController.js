@@ -22,6 +22,7 @@ const sanitizeItems = (items = []) => {
       price,
       quantity,
       weight,
+      cut: String(item.cut || "").slice(0, 40),
       observation: String(item.observation || "").slice(0, 250),
       subtotal: price * quantity,
     };
