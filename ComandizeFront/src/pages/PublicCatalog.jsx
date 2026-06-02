@@ -264,6 +264,129 @@ function PublicCatalog() {
 
   const catalogUrl = window.location.pathname.replace("/", "");
 
+  const getCatalogHash = () =>
+    decodeURIComponent(window.location.hash.replace("#", ""));
+
+  const clearCatalogHash = () => {
+    if (window.location.hash) {
+      window.history.pushState("", document.title, window.location.pathname + window.location.search);
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+      return;
+    }
+
+    setSelectedItem(null);
+    setShowCart(false);
+    setCheckoutStep(false);
+    setShowRegisterModal(false);
+    setShowLoginModal(false);
+    setShowBenefitsPage(false);
+  };
+
+  const pushCatalogHash = (hash) => {
+    const nextHash = `#${encodeURIComponent(hash)}`;
+
+    if (window.location.hash === nextHash) {
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+      return;
+    }
+
+    window.location.hash = encodeURIComponent(hash);
+  };
+
+  const syncCatalogHash = () => {
+    const hash = getCatalogHash();
+
+    if (!hash) {
+      setSelectedItem(null);
+      setShowCart(false);
+      setCheckoutStep(false);
+      setShowRegisterModal(false);
+      setShowLoginModal(false);
+      setShowBenefitsPage(false);
+      return;
+    }
+
+    if (hash === "register") {
+      setShowRegisterModal(true);
+      setShowLoginModal(false);
+      setShowBenefitsPage(false);
+      setShowCart(false);
+      setCheckoutStep(false);
+      setSelectedItem(null);
+      return;
+    }
+
+    if (hash === "login") {
+      setShowLoginModal(true);
+      setShowRegisterModal(false);
+      setShowBenefitsPage(false);
+      setShowCart(false);
+      setCheckoutStep(false);
+      setSelectedItem(null);
+      return;
+    }
+
+    if (hash === "benefits") {
+      setShowBenefitsPage(true);
+      setShowRegisterModal(false);
+      setShowLoginModal(false);
+      setShowCart(false);
+      setCheckoutStep(false);
+      setSelectedItem(null);
+      return;
+    }
+
+    if (hash === "cart") {
+      setShowCart(true);
+      setCheckoutStep(false);
+      setShowRegisterModal(false);
+      setShowLoginModal(false);
+      setShowBenefitsPage(false);
+      setSelectedItem(null);
+      return;
+    }
+
+    if (hash === "checkout") {
+      setShowCart(true);
+      setCheckoutStep(true);
+      setShowRegisterModal(false);
+      setShowLoginModal(false);
+      setShowBenefitsPage(false);
+      setSelectedItem(null);
+      return;
+    }
+
+    if (hash.startsWith("item-")) {
+      const itemId = hash.replace("item-", "");
+      const foundItem = sections
+        .flatMap((section) => section.products || [])
+        .find((item) => String(item._id) === String(itemId));
+
+      if (foundItem) {
+        setShowCart(false);
+        setCheckoutStep(false);
+        setShowRegisterModal(false);
+        setShowLoginModal(false);
+        setShowBenefitsPage(false);
+
+        setSelectedItem((current) => {
+          if (String(current?._id || "") === String(foundItem._id)) {
+            return current;
+          }
+
+          setSelectedWeight("");
+          setSelectedCut("");
+          setQuantity(1);
+          setObservation("");
+          setMessage("");
+
+          return foundItem;
+        });
+      }
+    }
+  };
+
+
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/catalog/${catalogUrl}`)
       .then((res) => res.json())
@@ -275,6 +398,16 @@ function PublicCatalog() {
         setLoading(false);
       });
   }, [catalogUrl]);
+
+  useEffect(() => {
+    syncCatalogHash();
+
+    window.addEventListener("hashchange", syncCatalogHash);
+
+    return () => {
+      window.removeEventListener("hashchange", syncCatalogHash);
+    };
+  }, [sections]);
 
   useEffect(() => {
     localStorage.setItem("comandize_cart", JSON.stringify(cart));
@@ -345,21 +478,17 @@ function PublicCatalog() {
 
   const handleOpenRegister = () => {
     setCustomerMessage("");
-    setShowRegisterModal(true);
-    setShowLoginModal(false);
+    pushCatalogHash("register");
   };
 
   const handleOpenLogin = () => {
     setCustomerMessage("");
-    setShowLoginModal(true);
-    setShowRegisterModal(false);
+    pushCatalogHash("login");
   };
 
   const handleOpenBenefits = () => {
     setCustomerMessage("");
-    setShowBenefitsPage(true);
-    setShowRegisterModal(false);
-    setShowLoginModal(false);
+    pushCatalogHash("benefits");
   };
 
   const registerCustomer = async () => {
@@ -504,6 +633,7 @@ function PublicCatalog() {
     setQuantity(1);
     setObservation("");
     setMessage("");
+    pushCatalogHash(`item-${item._id}`);
   };
 
   const closeItemModal = () => {
@@ -513,6 +643,7 @@ function PublicCatalog() {
     setQuantity(1);
     setObservation("");
     setMessage("");
+    clearCatalogHash();
   };
 
   const getItemUnitPrice = () => {
@@ -579,8 +710,13 @@ function PublicCatalog() {
     };
 
     setCart([...cart, cartItem]);
-    closeItemModal();
-    setShowCart(true);
+    setSelectedItem(null);
+    setSelectedWeight("");
+    setSelectedCut("");
+    setQuantity(1);
+    setObservation("");
+    setMessage("");
+    pushCatalogHash("cart");
   };
 
   const increaseCartItem = (cartId) => {
@@ -797,6 +933,7 @@ ${checkout.storeMessage || "Sem observação"}
     alert("Pedido enviado com sucesso!");
     setShowCart(false);
     setCheckoutStep(false);
+    clearCatalogHash();
   };
 
   useEffect(() => {
@@ -1214,7 +1351,7 @@ ${checkout.storeMessage || "Sem observação"}
               </button>
 
               <button
-                onClick={() => setShowRegisterModal(false)}
+                onClick={clearCatalogHash}
                 className="w-full bg-zinc-800 text-white font-black p-3 rounded-xl"
               >
                 Fechar
@@ -1260,7 +1397,7 @@ ${checkout.storeMessage || "Sem observação"}
                 </button>
 
                 <button
-                  onClick={() => setShowLoginModal(false)}
+                  onClick={clearCatalogHash}
                   className="w-full bg-red-600 text-white font-black p-4 rounded-xl"
                 >
                   Continuar comprando
@@ -1331,7 +1468,7 @@ ${checkout.storeMessage || "Sem observação"}
                 </button>
 
                 <button
-                  onClick={() => setShowLoginModal(false)}
+                  onClick={clearCatalogHash}
                   className="w-full bg-zinc-800 text-white font-black p-3 rounded-xl"
                 >
                   Fechar
@@ -1457,7 +1594,7 @@ ${checkout.storeMessage || "Sem observação"}
 
       {cartQuantity > 0 && (
         <button
-          onClick={() => setShowCart(true)}
+          onClick={() => pushCatalogHash("cart")}
           className="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 bg-red-600 hover:bg-red-700 text-white px-5 py-4 rounded-2xl font-black shadow-xl z-40 text-sm md:text-base"
         >
           Ver carrinho • {cartQuantity} item(ns) • {formatMoney(finalCartTotal)}
@@ -1629,9 +1766,9 @@ ${checkout.storeMessage || "Sem observação"}
               <button
                 onClick={() => {
                   if (checkoutStep) {
-                    setCheckoutStep(false);
+                    pushCatalogHash("cart");
                   } else {
-                    setShowCart(false);
+                    clearCatalogHash();
                   }
                 }}
                 className="bg-red-600 text-white px-4 py-2 rounded-xl font-bold"
@@ -1891,7 +2028,7 @@ ${checkout.storeMessage || "Sem observação"}
                     </div>
 
                     <button
-                      onClick={() => setCheckoutStep(true)}
+                      onClick={() => pushCatalogHash("checkout")}
                       className="w-full bg-red-600 text-white font-black p-4 rounded-xl mt-4"
                     >
                       Finalizar pedido
@@ -1907,9 +2044,8 @@ ${checkout.storeMessage || "Sem observação"}
       {showBenefitsPage && (
         <BenefitsPage
           customer={customer}
-          onClose={() => setShowBenefitsPage(false)}
+          onClose={clearCatalogHash}
           onRegister={() => {
-            setShowBenefitsPage(false);
             handleOpenRegister();
           }}
         />
