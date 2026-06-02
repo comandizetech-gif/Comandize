@@ -43,11 +43,19 @@ const getCatalogOpenStatus = (config, todaySchedule) => {
     config.manualCatalogDate === todayKeyString();
 
   if (manualIsValidToday && config.manualCatalogStatus === "OPEN") {
-    return { isOpen: true, mode: "OPEN", label: "Aberto manualmente pelo painel até virar o dia" };
+    return {
+      isOpen: true,
+      mode: "OPEN",
+      label: "Aberto manualmente pelo painel até virar o dia",
+    };
   }
 
   if (manualIsValidToday && config.manualCatalogStatus === "CLOSED") {
-    return { isOpen: false, mode: "CLOSED", label: "Fechado manualmente pelo painel até virar o dia" };
+    return {
+      isOpen: false,
+      mode: "CLOSED",
+      label: "Fechado manualmente pelo painel até virar o dia",
+    };
   }
 
   return {
@@ -62,7 +70,9 @@ export const getPublicCatalog = async (req, res) => {
     const { catalogUrl } = req.params;
     const today = dayMap[new Date().getDay()];
 
-    const store = await User.findOne({ catalogUrl, active: true }).select("storeName catalogUrl phone");
+    const store = await User.findOne({ catalogUrl, active: true }).select(
+      "storeName catalogUrl phone"
+    );
 
     if (!store) {
       return res.status(404).json({ message: "Catálogo não encontrado ou loja inativa." });
@@ -89,7 +99,12 @@ export const getPublicCatalog = async (req, res) => {
           .filter((item) => item.visible && item.product && item.availableDays.includes(today))
           .sort((a, b) => b.priority - a.priority);
 
-        return { _id: section._id, name: section.name, products };
+        return {
+          _id: section._id,
+          name: section.name,
+          displayMode: section.displayMode || "NORMAL",
+          products,
+        };
       })
       .filter((section) => section.products.length > 0);
 

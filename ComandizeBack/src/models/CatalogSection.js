@@ -89,6 +89,12 @@ const catalogSectionSchema = new mongoose.Schema(
       trim: true,
     },
 
+    displayMode: {
+      type: String,
+      enum: ["NORMAL", "CAROUSEL"],
+      default: "NORMAL",
+    },
+
     products: [catalogItemSchema],
   },
   {

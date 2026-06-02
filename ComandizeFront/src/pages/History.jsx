@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_URL = "http://localhost:3000/api/orders";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://comandize.com.br";
+
+const API_URL = `${API_BASE_URL}/api/orders`;
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString("pt-BR", {

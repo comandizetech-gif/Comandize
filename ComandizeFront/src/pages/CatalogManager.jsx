@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { FaCog } from "react-icons/fa";
 
-const API_URL = "http://localhost:3000/api/catalog-manager";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://comandize.com.br";
+
+const API_URL = `${API_BASE_URL}/api/catalog-manager`;
 
 
 const cutOptions = [
@@ -188,6 +191,32 @@ function CatalogManager() {
     }
   };
 
+  const updateSectionDisplayMode = async (sectionId, displayMode) => {
+    if (loadingAction) return;
+
+    setLoadingAction(true);
+
+    try {
+      const response = await fetch(`${API_URL}/sections/${sectionId}/display-mode`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ displayMode }),
+      });
+
+      const data = await response.json();
+      setMessage(data.message || "Modo da faixa atualizado.");
+
+      if (response.ok) {
+        await loadSections();
+      }
+    } catch {
+      setMessage("Erro ao atualizar modo da faixa.");
+    } finally {
+      setTimeout(() => setLoadingAction(false), 700);
+    }
+  };
+
+
   const openItemConfig = (sectionId, item) => {
     const key = `${sectionId}-${item._id}`;
 
@@ -342,22 +371,52 @@ function CatalogManager() {
           key={section._id}
           className="bg-white border border-gray-200 shadow-sm rounded-2xl p-4 sm:p-6"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-5">
             <div>
               <h4 className="text-2xl font-black text-orange-500">
                 {section.name}
               </h4>
               <p className="text-gray-500 text-sm">
-                {section.products.length} produto(s)
+                {section.products.length} produto(s) • {section.displayMode === "CAROUSEL" ? "Carrossel lateral" : "Faixa normal"}
               </p>
             </div>
 
-            <button
-              onClick={() => deleteSection(section._id)}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold w-full sm:w-auto"
-            >
-              Excluir Categoria
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
+              <div className="grid grid-cols-2 bg-gray-100 border border-gray-200 rounded-xl p-1 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => updateSectionDisplayMode(section._id, "NORMAL")}
+                  disabled={loadingAction}
+                  className={`px-4 py-2 rounded-lg text-sm font-black transition disabled:opacity-50 ${
+                    section.displayMode !== "CAROUSEL"
+                      ? "bg-orange-500 text-white shadow-sm"
+                      : "text-gray-600 hover:bg-white"
+                  }`}
+                >
+                  Faixa normal
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateSectionDisplayMode(section._id, "CAROUSEL")}
+                  disabled={loadingAction}
+                  className={`px-4 py-2 rounded-lg text-sm font-black transition disabled:opacity-50 ${
+                    section.displayMode === "CAROUSEL"
+                      ? "bg-orange-500 text-white shadow-sm"
+                      : "text-gray-600 hover:bg-white"
+                  }`}
+                >
+                  Carrossel lateral
+                </button>
+              </div>
+
+              <button
+                onClick={() => deleteSection(section._id)}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold w-full sm:w-auto"
+              >
+                Excluir Categoria
+              </button>
+            </div>
           </div>
 
           <div className="relative mb-5">

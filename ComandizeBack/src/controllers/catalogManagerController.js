@@ -1,7 +1,17 @@
 import CatalogSection from "../models/CatalogSection.js";
 import Product from "../models/Product.js";
 
-const cutOptions = [
+const validDays = [
+  "domingo",
+  "segunda",
+  "terca",
+  "quarta",
+  "quinta",
+  "sexta",
+  "sabado",
+];
+
+const validCuts = [
   "Nenhum",
   "Bife",
   "Moida",
@@ -14,52 +24,60 @@ const cutOptions = [
   "Gelado",
 ];
 
-const normalizeTextArray = (value) => {
-  if (!value) return [];
+const validDisplayModes = ["NORMAL", "CAROUSEL"];
 
+const getUserId = (req) => req.user?._id || req.user?.id;
+
+const normalizeWeightOptions = (value) => {
   if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
+    return value
+      .map(Number)
+      .filter((number) => Number.isFinite(number) && number > 0);
   }
 
-  return String(value)
+  return String(value || "")
     .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+    .map((item) => Number(String(item).trim()))
+    .filter((number) => Number.isFinite(number) && number > 0);
 };
 
-const normalizeCutArray = (value) => {
-  const values = normalizeTextArray(value).filter((item) => cutOptions.includes(item));
+const normalizeCuts = (value) => {
+  const cuts = Array.isArray(value) ? value : [value];
+  const filtered = cuts.filter((cut) => validCuts.includes(cut));
 
-  if (values.length === 0 || values.includes("Nenhum")) {
-    return ["Nenhum"];
+  if (!filtered.length) return ["Nenhum"];
+
+  if (filtered.includes("Nenhum") && filtered.length > 1) {
+    return filtered.filter((cut) => cut !== "Nenhum");
   }
 
-  return [...new Set(values)];
+  return filtered;
 };
 
-const normalizeNumberArray = (value) => {
-  if (!value) return [];
+const normalizeDays = (value) => {
+  const days = Array.isArray(value) ? value : [];
+  const filtered = days.filter((day) => validDays.includes(day));
 
-  if (Array.isArray(value)) {
-    return value.map(Number).filter((item) => !Number.isNaN(item) && item > 0);
-  }
+  return filtered.length ? filtered : validDays;
+};
 
-  return String(value)
-    .split(",")
-    .map((item) => Number(item.trim()))
-    .filter((item) => !Number.isNaN(item) && item > 0);
+const normalizeDisplayMode = (value) => {
+  const mode = String(value || "NORMAL").toUpperCase();
+  return validDisplayModes.includes(mode) ? mode : "NORMAL";
 };
 
 export const listSections = async (req, res) => {
   try {
-    const sections = await CatalogSection.find({ user: req.user._id })
+    const userId = getUserId(req);
+
+    const sections = await CatalogSection.find({ user: userId })
       .populate("products.product")
       .sort({ createdAt: 1 });
 
     return res.json(sections);
   } catch (error) {
     return res.status(500).json({
-      message: "Erro ao listar faixas.",
+      message: "Erro ao listar categorias.",
       error: error.message,
     });
   }
@@ -67,34 +85,82 @@ export const listSections = async (req, res) => {
 
 export const createSection = async (req, res) => {
   try {
-    const name = req.body.name?.trim();
+    const userId = getUserId(req);
+    const name = String(req.body.name || "").trim();
+    const displayMode = normalizeDisplayMode(req.body.displayMode);
 
-    if (!name || name.length > 80) {
-      return res.status(400).json({ message: "Nome da faixa inválido." });
-    }
-
-    const exists = await CatalogSection.findOne({
-      user: req.user._id,
-      name: { $regex: `^${name}$`, $options: "i" },
-    });
-
-    if (exists) {
-      return res.status(400).json({ message: "Essa faixa já existe." });
+    if (!name) {
+      return res.status(400).json({ message: "Informe o nome da categoria." });
     }
 
     const section = await CatalogSection.create({
-      user: req.user._id,
+      user: userId,
       name,
+      displayMode,
       products: [],
     });
 
     return res.status(201).json({
-      message: "Faixa criada com sucesso.",
+      message: "Categoria criada com sucesso.",
       section,
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Erro ao criar faixa.",
+      message: "Erro ao criar categoria.",
+      error: error.message,
+    });
+  }
+};
+
+export const updateSectionDisplayMode = async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { sectionId } = req.params;
+    const displayMode = normalizeDisplayMode(req.body.displayMode);
+
+    const section = await CatalogSection.findOneAndUpdate(
+      { _id: sectionId, user: userId },
+      { displayMode },
+      { new: true }
+    ).populate("products.product");
+
+    if (!section) {
+      return res.status(404).json({ message: "Categoria não encontrada." });
+    }
+
+    return res.json({
+      message:
+        displayMode === "CAROUSEL"
+          ? "Categoria alterada para carrossel lateral."
+          : "Categoria alterada para faixa normal.",
+      section,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erro ao alterar modo da categoria.",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteSection = async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { sectionId } = req.params;
+
+    const deleted = await CatalogSection.findOneAndDelete({
+      _id: sectionId,
+      user: userId,
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Categoria não encontrada." });
+    }
+
+    return res.json({ message: "Categoria excluída com sucesso." });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erro ao excluir categoria.",
       error: error.message,
     });
   }
@@ -102,21 +168,21 @@ export const createSection = async (req, res) => {
 
 export const searchProducts = async (req, res) => {
   try {
-    const q = req.query.q?.trim();
+    const userId = getUserId(req);
+    const q = String(req.query.q || "").trim();
 
-    if (!q || q.length < 2) {
-      return res.json([]);
-    }
+    if (q.length < 2) return res.json([]);
 
     const products = await Product.find({
-      user: req.user._id,
+      user: userId,
       $or: [
         { name: { $regex: q, $options: "i" } },
         { sku: { $regex: q, $options: "i" } },
       ],
     })
-      .limit(5)
-      .select("name sku salePrice productType measureType image");
+      .select("name sku measureType salePrice clientPrice image")
+      .limit(10)
+      .sort({ name: 1 });
 
     return res.json(products);
   } catch (error) {
@@ -129,56 +195,41 @@ export const searchProducts = async (req, res) => {
 
 export const addProductToSection = async (req, res) => {
   try {
+    const userId = getUserId(req);
     const { sectionId } = req.params;
     const { productId } = req.body;
 
-    const section = await CatalogSection.findOne({
-      _id: sectionId,
-      user: req.user._id,
-    });
-
-    if (!section) {
-      return res.status(404).json({ message: "Faixa não encontrada." });
-    }
-
-    const product = await Product.findOne({
-      _id: productId,
-      user: req.user._id,
-    });
+    const product = await Product.findOne({ _id: productId, user: userId });
 
     if (!product) {
       return res.status(404).json({ message: "Produto não encontrado." });
     }
 
-    const alreadyExists = section.products.some(
-      (item) => item.product.toString() === productId
-    );
-
-    if (alreadyExists) {
-      return res.status(400).json({ message: "Produto já está nessa faixa." });
-    }
-
-    section.products.push({
-      product: productId,
-      visible: true,
-      description: "",
-      weightOptions: product.measureType === "KILO" ? [500, 600, 700, 1000] : [],
-      cuts: ["Nenhum"],
-      priority: 0,
-      availableDays: [
-        "domingo",
-        "segunda",
-        "terca",
-        "quarta",
-        "quinta",
-        "sexta",
-        "sabado",
-      ],
+    const section = await CatalogSection.findOne({
+      _id: sectionId,
+      user: userId,
     });
 
+    if (!section) {
+      return res.status(404).json({ message: "Categoria não encontrada." });
+    }
+
+    const alreadyAdded = section.products.some(
+      (item) => String(item.product) === String(productId)
+    );
+
+    if (alreadyAdded) {
+      return res.status(400).json({
+        message: "Este produto já está nesta categoria.",
+      });
+    }
+
+    section.products.push({ product: productId });
     await section.save();
 
-    return res.json({ message: "Produto adicionado à faixa." });
+    return res.status(201).json({
+      message: "Produto adicionado ao catálogo.",
+    });
   } catch (error) {
     return res.status(500).json({
       message: "Erro ao adicionar produto.",
@@ -189,15 +240,16 @@ export const addProductToSection = async (req, res) => {
 
 export const updateCatalogItem = async (req, res) => {
   try {
+    const userId = getUserId(req);
     const { sectionId, itemId } = req.params;
 
     const section = await CatalogSection.findOne({
       _id: sectionId,
-      user: req.user._id,
+      user: userId,
     });
 
     if (!section) {
-      return res.status(404).json({ message: "Faixa não encontrada." });
+      return res.status(404).json({ message: "Categoria não encontrada." });
     }
 
     const item = section.products.id(itemId);
@@ -211,34 +263,33 @@ export const updateCatalogItem = async (req, res) => {
     }
 
     if (req.body.description !== undefined) {
-      item.description = String(req.body.description).slice(0, 250);
+      item.description = String(req.body.description || "")
+        .trim()
+        .slice(0, 250);
     }
 
     if (req.body.weightOptions !== undefined) {
-      item.weightOptions = normalizeNumberArray(req.body.weightOptions);
+      item.weightOptions = normalizeWeightOptions(req.body.weightOptions);
     }
 
     if (req.body.cuts !== undefined) {
-      item.cuts = normalizeCutArray(req.body.cuts);
+      item.cuts = normalizeCuts(req.body.cuts);
     }
 
     if (req.body.priority !== undefined) {
-      item.priority = Number(req.body.priority) || 0;
+      item.priority = Number(req.body.priority || 0);
     }
 
     if (req.body.availableDays !== undefined) {
-      item.availableDays = normalizeTextArray(req.body.availableDays);
+      item.availableDays = normalizeDays(req.body.availableDays);
     }
 
     await section.save();
 
-    return res.json({
-      message: "Item do catálogo atualizado.",
-      item,
-    });
+    return res.json({ message: "Configurações salvas com sucesso." });
   } catch (error) {
     return res.status(500).json({
-      message: "Erro ao atualizar item.",
+      message: "Erro ao salvar configurações.",
       error: error.message,
     });
   }
@@ -246,45 +297,31 @@ export const updateCatalogItem = async (req, res) => {
 
 export const removeProductFromSection = async (req, res) => {
   try {
+    const userId = getUserId(req);
     const { sectionId, itemId } = req.params;
 
     const section = await CatalogSection.findOne({
       _id: sectionId,
-      user: req.user._id,
+      user: userId,
     });
 
     if (!section) {
-      return res.status(404).json({ message: "Faixa não encontrada." });
+      return res.status(404).json({ message: "Categoria não encontrada." });
     }
 
-    section.products = section.products.filter(
-      (item) => item._id.toString() !== itemId
-    );
+    const item = section.products.id(itemId);
 
+    if (!item) {
+      return res.status(404).json({ message: "Item não encontrado." });
+    }
+
+    item.deleteOne();
     await section.save();
 
-    return res.json({ message: "Produto removido da faixa." });
+    return res.json({ message: "Produto removido da categoria." });
   } catch (error) {
     return res.status(500).json({
       message: "Erro ao remover produto.",
-      error: error.message,
-    });
-  }
-};
-
-export const deleteSection = async (req, res) => {
-  try {
-    const { sectionId } = req.params;
-
-    await CatalogSection.findOneAndDelete({
-      _id: sectionId,
-      user: req.user._id,
-    });
-
-    return res.json({ message: "Faixa excluída." });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Erro ao excluir faixa.",
       error: error.message,
     });
   }

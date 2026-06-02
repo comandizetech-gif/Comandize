@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
 
-import {
-  FaClock,
-  FaMotorcycle,
-  FaCreditCard,
-} from "react-icons/fa";
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://comandize.com.br";
 
 function getAssetUrl(path = "") {
@@ -1148,55 +1142,6 @@ ${checkout.storeMessage || "Sem observação"}
           </div>
         )}
 
-        {/* INFOS ABAIXO */}
-        <div className="bg-white border-t border-zinc-200 border-b">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5 px-5 md:px-8 py-6">
-            {/* TEMPO */}
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full border border-zinc-300 flex items-center justify-center text-black bg-white shadow-sm">
-                <FaClock className="text-[20px]" />
-              </div>
-
-              <div>
-                <h3 className="font-black text-lg text-[#20242b] leading-tight">
-                  Entrega em 40-60min
-                </h3>
-
-                <p className="text-zinc-500 text-sm">Tempo estimado</p>
-              </div>
-            </div>
-
-            {/* ENTREGA */}
-            <div className="flex items-center gap-4 md:border-l md:border-zinc-200 md:pl-8">
-              <div className="w-12 h-12 rounded-full border border-zinc-300 flex items-center justify-center text-black bg-white shadow-sm">
-                <FaMotorcycle className="text-[20px]" />
-              </div>
-
-              <div>
-                <h3 className="font-black text-lg text-[#20242b] leading-tight">
-                  Taxa de entrega
-                </h3>
-
-                <p className="text-zinc-500 text-sm">Consulte valores</p>
-              </div>
-            </div>
-
-            {/* PAGAMENTO */}
-            <div className="flex items-center gap-4 md:border-l md:border-zinc-200 md:pl-8">
-              <div className="w-12 h-12 rounded-full border border-zinc-300 flex items-center justify-center text-black bg-white shadow-sm">
-                <FaCreditCard className="text-[20px]" />
-              </div>
-
-              <div>
-                <h3 className="font-black text-lg text-[#20242b] leading-tight">
-                  Formas de pagamento
-                </h3>
-
-                <p className="text-zinc-500 text-sm">Dinheiro, Cartão e Pix</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </header>
 
       {customerMessage && !showRegisterModal && !showLoginModal && (
@@ -1517,67 +1462,93 @@ ${checkout.storeMessage || "Sem observação"}
       <main className="p-5 md:p-8 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
           <div className="space-y-12">
-            {sections.map((section) => (
-              <section key={section._id}>
-                <h2 className="text-3xl md:text-4xl font-black text-red-600 mb-2">
-                  {section.name}
-                </h2>
+            {sections.map((section) => {
+              const isCarousel = section.displayMode === "CAROUSEL";
 
-                <div className="h-1 bg-red-600 w-24 mb-6 rounded-full" />
+              const renderProductCard = (item, carousel = false) => {
+                const product = item.product;
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {section.products.map((item) => {
-                    const product = item.product;
+                if (!product) return null;
 
-                    if (!product) return null;
+                return (
+                  <div
+                    key={item._id}
+                    className={`${
+                      carousel
+                        ? "min-w-[285px] max-w-[285px] md:min-w-[330px] md:max-w-[330px]"
+                        : ""
+                    } bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden flex relative min-h-[160px]`}
+                  >
+                    {product.image && (
+                      <img
+                        src={getAssetUrl(product.image)}
+                        alt={product.name}
+                        className="w-32 md:w-44 h-auto object-cover object-center shrink-0"
+                      />
+                    )}
 
-                    return (
-                      <div
-                        key={item._id}
-                        className="bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden flex relative min-h-[160px]"
-                      >
-                        {product.image && (
-                          <img
-                            src={getAssetUrl(product.image)}
-                            alt={product.name}
-                            className="w-36 md:w-44 h-auto object-cover object-center"
-                          />
-                        )}
+                    <div className="p-4 md:p-5 flex-1 pr-16 md:pr-20 min-w-0">
+                      <h3 className="text-base md:text-xl font-black text-[#20242b] line-clamp-2">
+                        {product.name}
+                      </h3>
 
-                        <div className="p-4 md:p-5 flex-1 pr-20">
-                          <h3 className="text-lg md:text-xl font-black text-[#20242b]">
-                            {product.name}
-                          </h3>
+                      {item.description && (
+                        <p className="text-zinc-500 text-sm mt-1 line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
 
-                          {item.description && (
-                            <p className="text-zinc-500 text-sm mt-1">
-                              {item.description}
-                            </p>
-                          )}
+                      <p className="text-red-600 text-xl md:text-2xl font-black mt-3">
+                        {formatMoney(getProductPrice(product, customer))}
+                      </p>
 
-                          <p className="text-red-600 text-2xl font-black mt-3">
-                            {formatMoney(getProductPrice(product, customer))}
-                          </p>
+                      {customer && Number(product.clientPrice || 0) > 0 && (
+                        <p className="text-xs font-bold text-green-600 mt-1">
+                          Preço especial para cliente
+                        </p>
+                      )}
+                    </div>
 
-                          {customer && Number(product.clientPrice || 0) > 0 && (
-                            <p className="text-xs font-bold text-green-600 mt-1">
-                              Preço especial para cliente
-                            </p>
-                          )}
-                        </div>
+                    <button
+                      onClick={() => openItemModal(item)}
+                      className="absolute right-4 bottom-4 bg-red-600 hover:bg-red-700 text-white w-12 h-12 md:w-16 md:h-16 rounded-full font-black text-3xl md:text-4xl shadow-xl flex items-center justify-center hover:scale-110 transition"
+                    >
+                      +
+                    </button>
+                  </div>
+                );
+              };
 
-                        <button
-                          onClick={() => openItemModal(item)}
-                          className="absolute right-5 bottom-5 bg-red-600 hover:bg-red-700 text-white w-16 h-16 rounded-full font-black text-4xl shadow-xl flex items-center justify-center hover:scale-110 transition"
-                        >
-                          +
-                        </button>
+              return (
+                <section key={section._id}>
+                  <div className="flex items-end justify-between gap-3 mb-2">
+                    <h2 className="text-3xl md:text-4xl font-black text-red-600">
+                      {section.name}
+                    </h2>
+
+                    {isCarousel && (
+                      <span className="hidden md:inline-flex text-xs font-black text-zinc-500 bg-zinc-100 px-3 py-2 rounded-full">
+                        Arraste para o lado →
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="h-1 bg-red-600 w-24 mb-6 rounded-full" />
+
+                  {isCarousel ? (
+                    <div className="-mx-5 md:mx-0 overflow-x-auto pb-4 px-5 md:px-0 scroll-smooth">
+                      <div className="flex gap-5 w-max">
+                        {section.products.map((item) => renderProductCard(item, true))}
                       </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {section.products.map((item) => renderProductCard(item))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
 
             {sections.length === 0 && (
               <p className="text-zinc-500">Nenhum produto disponível no catálogo.</p>
@@ -1939,6 +1910,14 @@ ${checkout.storeMessage || "Sem observação"}
                 >
                   Finalizar e acompanhar pelo WhatsApp
                 </button>
+
+                <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-50 shadow-sm">
+                  <img
+                    src="/icons/whatsaploja.png"
+                    alt="Mini tutorial para finalizar o pedido pelo WhatsApp"
+                    className="w-full h-auto object-cover block"
+                  />
+                </div>
               </div>
             ) : (
               <>

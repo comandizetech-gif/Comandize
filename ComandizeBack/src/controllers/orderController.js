@@ -5,6 +5,7 @@ import Customer from "../models/Customer.js";
 import DeliveryPerson from "../models/DeliveryPerson.js";
 import DeliverySetting from "../models/DeliverySetting.js";
 import CashRegister from "../models/CashRegister.js";
+import { sendNewOrderNotification } from "../services/pushNotificationService.js";
 
 const onlyNumbers = (value = "") => String(value).replace(/\D/g, "");
 
@@ -426,6 +427,10 @@ export const createPublicOrder = async (req, res) => {
       cashbackUsed: allowedCashback,
       total,
       status: "PENDENTE",
+    });
+
+    sendNewOrderNotification(store._id, order).catch((error) => {
+      console.log("Erro ao enviar push de novo pedido:", error.message);
     });
 
     return res.status(201).json({ message: "Pedido criado com sucesso.", order });

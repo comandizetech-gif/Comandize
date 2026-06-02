@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-const API_URL = "http://localhost:3000/api/orders";
-const STORE_CONFIG_URL = "http://localhost:3000/api/store-config";
-const CASH_URL = "http://localhost:3000/api/cash-register";
-const DELIVERY_PERSON_URL = "http://localhost:3000/api/delivery-persons";
-const DELIVERY_SETTINGS_URL = "http://localhost:3000/api/delivery-persons/settings";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://comandize.com.br";
+
+const API_URL = `${API_BASE_URL}/api/orders`;
+const STORE_CONFIG_URL = `${API_BASE_URL}/api/store-config`;
+const CASH_URL = `${API_BASE_URL}/api/cash-register`;
+const DELIVERY_PERSON_URL = `${API_BASE_URL}/api/delivery-persons`;
+const DELIVERY_SETTINGS_URL = `${API_BASE_URL}/api/delivery-persons/settings`;
 
 const statusOptions = ["TODOS", "PENDENTE", "ACEITO", "PREPARANDO", "SAIU_PARA_ENTREGA", "FINALIZADO", "CANCELADO"];
 
@@ -208,6 +210,52 @@ ${order.storeMessage || "Sem observação"}
 `;
 }
 
+
+function getActiveOrderIds(list = []) {
+  return new Set(
+    list
+      .filter((order) => order.status !== "FINALIZADO" && order.status !== "CANCELADO")
+      .map((order) => String(order._id))
+  );
+}
+
+function getOrderNotificationText(order) {
+  const customer = order?.customer?.name || "Cliente";
+  const total = formatMoney(order?.total || 0);
+  const type = order?.type === "ENTREGA" ? "Entrega" : "Retirada";
+  return `${type} • ${customer} • ${total}`;
+}
+
+function playNewOrderBeep() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  const context = new AudioContextClass();
+  const playTone = (delay, frequency) => {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.value = frequency;
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    const start = context.currentTime + delay;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.35, start + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.45);
+
+    oscillator.start(start);
+    oscillator.stop(start + 0.5);
+  };
+
+  playTone(0, 880);
+  playTone(0.58, 1046);
+  playTone(1.16, 880);
+
+  setTimeout(() => context.close().catch(() => {}), 2200);
+}
+
 function Delivery() {
   const [orders, setOrders] = useState([]);
   const [editingOrder, setEditingOrder] = useState(null);
@@ -228,6 +276,12 @@ function Delivery() {
   const [deliveryPersons, setDeliveryPersons] = useState([]);
   const [deliverySettings, setDeliverySettings] = useState({ minimumFee: 3, minKmIncluded: 1, pricePerKm: 2, extraFee: 0 });
   const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState("");
+  const [notificationEnabled, setNotificationEnabled] = useState(() => localStorage.getItem("comandize_order_alerts") === "true");
+  const [newOrderAlert, setNewOrderAlert] = useState(null);
+
+  const knownOrderIdsRef = useRef(new Set());
+  const firstOrdersLoadRef = useRef(true);
+  const notificationEnabledRef = useRef(notificationEnabled);
 
   const token = localStorage.getItem("token");
 
@@ -236,11 +290,115 @@ function Delivery() {
     [token]
   );
 
+  useEffect(() => {
+    notificationEnabledRef.current = notificationEnabled;
+  }, [notificationEnabled]);
+
+  const enableOrderNotifications = async () => {
+    localStorage.setItem("comandize_order_alerts", "true");
+    setNotificationEnabled(true);
+
+    if ("Notification" in window && Notification.permission === "default") {
+      try {
+        await Notification.requestPermission();
+      } catch {
+        // Alguns navegadores bloqueiam sem interação direta; o som/vibração continuam funcionando com a tela aberta.
+      }
+    }
+
+    try {
+      playNewOrderBeep();
+      navigator.vibrate?.([250, 120, 250]);
+    } catch {
+      // Ignora bloqueios do navegador.
+    }
+
+    setNewOrderAlert({
+      title: "Alertas ativados",
+      body: "Quando chegar pedido novo com o painel aberto, o COMANDIZE vai tocar e vibrar quando possível.",
+      createdAt: Date.now(),
+    });
+  };
+
+  const notifyNewOrders = (newOrders = []) => {
+    if (!newOrders.length) return;
+
+    const firstOrder = newOrders[0];
+    const body = newOrders.length > 1
+      ? `${newOrders.length} pedidos novos recebidos.`
+      : getOrderNotificationText(firstOrder);
+
+    setNewOrderAlert({
+      title: newOrders.length > 1 ? "Novos pedidos recebidos" : "Novo pedido recebido",
+      body,
+      createdAt: Date.now(),
+      orderId: firstOrder?._id,
+    });
+
+    document.title = `🔔 ${newOrders.length} novo(s) pedido(s) • COMANDIZE`;
+    setTimeout(() => {
+      document.title = "COMANDIZE";
+    }, 12000);
+
+    if (notificationEnabledRef.current) {
+      try {
+        playNewOrderBeep();
+      } catch {
+        // Navegador pode bloquear áudio sem interação anterior.
+      }
+
+      try {
+        navigator.vibrate?.([500, 180, 500, 180, 500]);
+      } catch {
+        // Vibração não existe em todos aparelhos.
+      }
+    }
+
+    if ("Notification" in window && Notification.permission === "granted") {
+      try {
+        const notification = new Notification("Novo pedido COMANDIZE", {
+          body,
+          icon: "/icons/Comandize.png",
+          badge: "/icons/Comandize.png",
+          tag: "comandize-new-order",
+          requireInteraction: true,
+        });
+
+        notification.onclick = () => {
+          window.focus();
+          window.location.hash = "Delivery";
+          notification.close();
+        };
+      } catch {
+        // Se o navegador bloquear Notification API, o banner e som seguem funcionando.
+      }
+    }
+  };
+
   const loadOrders = async () => {
     try {
       const response = await fetch(`${API_URL}/my`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
-      setOrders(Array.isArray(data) ? data : []);
+      const nextOrders = Array.isArray(data) ? data : [];
+      const previousIds = knownOrderIdsRef.current;
+      const nextIds = getActiveOrderIds(nextOrders);
+
+      const newOrders = nextOrders.filter((order) => {
+        const id = String(order._id || "");
+        return id && order.status !== "FINALIZADO" && order.status !== "CANCELADO" && !previousIds.has(id);
+      });
+
+      setOrders(nextOrders);
+      knownOrderIdsRef.current = nextIds;
+
+      if (firstOrdersLoadRef.current) {
+        firstOrdersLoadRef.current = false;
+        return;
+      }
+
+      if (newOrders.length > 0) {
+        notifyNewOrders(newOrders);
+      }
     } catch {
       setMessage("Erro ao carregar pedidos.");
     }
@@ -703,6 +861,55 @@ A gramagem recalcula o preço proporcionalmente usando o preço de venda/base do
   return (
     <div className="space-y-6 text-[#374151]">
       {message && <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 text-sm text-[#374151] shadow-sm">{message}</div>}
+
+      <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-black text-[#ff9811]">🔔 Alertas de pedidos</h3>
+          <p className="text-sm text-[#6b7280]">
+            {notificationEnabled
+              ? "Som e vibração ativados para pedidos novos enquanto o painel estiver aberto."
+              : "Ative uma vez para liberar som/vibração no navegador deste aparelho."}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={enableOrderNotifications}
+          className={`${notificationEnabled ? "bg-green-500" : "bg-[#ff9811]"} text-white px-5 py-3 rounded-xl font-black text-sm`}
+        >
+          {notificationEnabled ? "Alertas ativos" : "Ativar som e vibração"}
+        </button>
+      </div>
+
+      {newOrderAlert && (
+        <div className="border-2 border-[#ff9811] bg-[#fff7ed] rounded-2xl shadow-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 animate-pulse">
+          <div>
+            <h3 className="text-xl font-black text-[#ff9811]">🚨 {newOrderAlert.title}</h3>
+            <p className="text-sm text-[#374151] font-bold">{newOrderAlert.body}</p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter("TODOS");
+                setNewOrderAlert(null);
+                window.location.hash = "Delivery";
+              }}
+              className="bg-[#ff9811] text-white px-4 py-2 rounded-xl font-black text-sm"
+            >
+              Ver pedidos
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewOrderAlert(null)}
+              className="bg-white border border-[#d1d5db] text-[#374151] px-4 py-2 rounded-xl font-black text-sm"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-sm p-4">

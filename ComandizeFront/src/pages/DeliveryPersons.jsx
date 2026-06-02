@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_URL = "http://localhost:3000/api/delivery-persons";
-const SETTINGS_URL = "http://localhost:3000/api/delivery-persons/settings";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://comandize.com.br";
+
+const API_URL = `${API_BASE_URL}/api/delivery-persons`;
+const SETTINGS_URL = `${API_BASE_URL}/api/delivery-persons/settings`;
 
 function onlyNumbers(value = "") {
   return String(value).replace(/\D/g, "");
