@@ -1,6 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_URL = "http://localhost:3000/api/products";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://comandize.com.br";
+
+const API_URL = `${API_BASE_URL}/api/products`;
+
+function getAssetUrl(path = "") {
+  if (!path) return "";
+  if (
+    path.startsWith("data:") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://")
+  ) {
+    return path;
+  }
+
+  if (path.startsWith("/uploads")) {
+    return `${API_BASE_URL}${path}`;
+  }
+
+  return path;
+}
 const PAGE_SIZE = 30;
 const CACHE_PREFIX = "comandize_products_cache_v1";
 
@@ -101,6 +121,8 @@ function Products() {
   const [stockToAdd, setStockToAdd] = useState({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -265,6 +287,8 @@ function Products() {
   const resetForm = () => {
     setForm(emptyForm());
     setEditingProduct(null);
+    setImageDragActive(false);
+    setFileInputKey((current) => current + 1);
   };
 
   const handleChange = (e) => {
@@ -305,7 +329,13 @@ function Products() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (submitLoading) return;
+
     setMessage("");
+    setSubmitLoading(true);
+
+    const wasEditing = Boolean(editingProduct);
 
     try {
       const url = editingProduct ? `${API_URL}/${editingProduct._id}` : API_URL;
@@ -317,25 +347,43 @@ function Products() {
         body: buildFormData(),
       });
 
-      const data = await response.json();
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
 
       if (response.status === 401) {
         handleUnauthorized();
         return;
       }
 
-      setMessage(data.message || "Operação concluída.");
-
-      if (response.ok) {
-        clearProductCache();
-        resetForm();
-        setShowForm(false);
-        await loadProducts(editingProduct ? page : 1, appliedSearch, true);
-        await loadRecipeProducts();
-        await loadTypes();
+      if (!response.ok) {
+        setMessage(
+          data.message ||
+            "Não foi possível salvar. Verifique se o nome ou o SKU já está cadastrado."
+        );
+        return;
       }
+
+      setMessage(data.message || "Produto salvo com sucesso.");
+
+      clearProductCache();
+      resetForm();
+
+      // No cadastro novo, mantém o formulário aberto para o usuário conseguir
+      // cadastrar outro produto em seguida, principalmente no mobile.
+      setShowForm(!wasEditing);
+
+      await loadProducts(wasEditing ? page : 1, appliedSearch, true);
+      await loadRecipeProducts();
+      await loadTypes();
     } catch {
       setMessage("Erro de conexão ao salvar produto.");
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -518,7 +566,7 @@ function Products() {
                 {editingProduct ? "Editar produto" : "Cadastrar produto"}
               </h3>
               <p className="text-xs text-[#6b7280]">
-                A imagem só é enviada ao banco quando você clica em salvar.
+                A imagem só é enviada ao servidor quando você clica em salvar.
               </p>
             </div>
 
@@ -593,6 +641,7 @@ function Products() {
             </div>
 
             <input
+              key={fileInputKey}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
@@ -701,8 +750,15 @@ function Products() {
             </p>
           </div>
 
-          <button className="md:col-span-2 bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl font-black">
-            {editingProduct ? "Atualizar produto" : "Cadastrar produto"}
+          <button
+            disabled={submitLoading}
+            className="md:col-span-2 bg-green-500 hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed text-white p-4 rounded-xl font-black"
+          >
+            {submitLoading
+              ? "Salvando..."
+              : editingProduct
+              ? "Atualizar produto"
+              : "Cadastrar produto"}
           </button>
         </form>
       )}
@@ -762,7 +818,7 @@ function Products() {
               <div key={product._id} className="bg-white border border-[#e5e7eb] rounded-2xl p-4 shadow-sm">
                 <div className="flex gap-3">
                   {product.image ? (
-                    <img src={product.image} alt={product.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                    <img src={getAssetUrl(product.image)} alt={product.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                   ) : (
                     <div className="w-16 h-16 rounded-xl bg-[#f9fafb] border border-[#e5e7eb] flex items-center justify-center text-2xl shrink-0">📦</div>
                   )}
@@ -866,7 +922,7 @@ function Products() {
                     <td className="p-3">
                       <div className="flex items-center gap-3">
                         {product.image ? (
-                          <img src={product.image} alt={product.name} className="w-11 h-11 rounded-xl object-cover" />
+                          <img src={getAssetUrl(product.image)} alt={product.name} className="w-11 h-11 rounded-xl object-cover" />
                         ) : (
                           <div className="w-11 h-11 rounded-xl bg-[#f9fafb] flex items-center justify-center text-sm">
                             📦

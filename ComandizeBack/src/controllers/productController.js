@@ -13,7 +13,9 @@ const createBuckets = new Map();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const UPLOAD_ROOT = path.join(__dirname, "..", "..", "uploads");
+const UPLOAD_ROOT = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(__dirname, "..", "..", "uploads");
 const PRODUCT_UPLOAD_DIR = path.join(UPLOAD_ROOT, "products");
 
 function ensureProductUploadDir() {
@@ -63,6 +65,11 @@ function toNullableNumber(value) {
 function toBoolean(value) {
   return value === true || value === "true" || value === "1" || value === 1;
 }
+
+function escapeRegex(value = "") {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 
 function parseRecipeItems(body) {
   if (!toBoolean(body.recipeEnabled)) return [];
@@ -192,6 +199,15 @@ async function validateProductPayload(payload, userId, currentProductId = null) 
   });
 
   if (skuExists) return "Já existe um produto com esse SKU.";
+
+  const escapedName = escapeRegex(payload.name);
+  const nameExists = await Product.findOne({
+    user: userId,
+    name: { $regex: `^${escapedName}$`, $options: "i" },
+    ...(currentProductId ? { _id: { $ne: currentProductId } } : {}),
+  });
+
+  if (nameExists) return "Já existe um produto com esse nome.";
 
   if (payload.recipeEnabled) {
     if (!payload.recipeItems.length) {

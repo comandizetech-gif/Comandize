@@ -24,7 +24,6 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
 
     name: {
@@ -165,6 +164,8 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Índices principais.
+// Removido "index: true" do campo user para evitar aviso de índice duplicado.
 productSchema.index({ user: 1, sku: 1 }, { unique: true });
 productSchema.index({ user: 1, name: 1 });
 productSchema.index({ user: 1, stock: 1 });

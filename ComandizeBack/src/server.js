@@ -14,6 +14,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import deliveryPersonRoutes from "./routes/deliveryPersonRoutes.js";
 import cashRegisterRoutes from "./routes/cashRegisterRoutes.js";
+import subAccountRoutes from "./routes/subAccountRoutes.js";
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/delivery-persons", deliveryPersonRoutes);
 app.use("/api/cash-register", cashRegisterRoutes);
+app.use("/api/sub-accounts", subAccountRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

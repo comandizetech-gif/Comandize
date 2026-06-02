@@ -70,6 +70,17 @@ function getAvailableCuts(item) {
     .filter((cut) => cut.toLowerCase() !== "nenhum");
 }
 
+function hasWeightVariationAlert(item) {
+  const cuts = getAvailableCuts(item).map((cut) =>
+    String(cut || "").trim().toLowerCase()
+  );
+
+  return cuts.includes("assado") || cuts.includes("quente");
+}
+
+const weightVariationAlertText =
+  "Este produto pode ter variações no peso de até 15% a mais ou 10% a menos por ser produto assado, em pedaços ou inteiro. Mas fique tranquilo: você será avisado pelo WhatsApp sobre o valor da mudança se isso ocorrer.";
+
 
 function BenefitImage({ src, alt }) {
   return (
@@ -1471,6 +1482,17 @@ ${checkout.storeMessage || "Sem observação"}
 
               {selectedItem.description && (
                 <p className="text-zinc-600 mt-2">{selectedItem.description}</p>
+              )}
+
+              {hasWeightVariationAlert(selectedItem) && (
+                <div className="mt-4 rounded-2xl border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
+                  <div className="flex gap-3">
+                    <span className="text-xl shrink-0">⚠️</span>
+                    <p className="text-sm font-bold leading-relaxed">
+                      {weightVariationAlertText}
+                    </p>
+                  </div>
+                </div>
               )}
 
               {selectedItem.weightOptions?.length > 0 && (
