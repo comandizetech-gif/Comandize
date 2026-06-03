@@ -1638,92 +1638,92 @@ ${checkout.storeMessage || "Sem observação"}
                 }
 
                 return (
-                  <div
-                    key={item._id}
+              <div
+                key={item._id}
+                className="
+                  bg-white
+                  border border-zinc-200
+                  shadow-md
+                  hover:shadow-2xl
+                  hover:-translate-y-1
+                  transition-all
+                  duration-300
+                  rounded-3xl
+                  overflow-hidden
+                  flex
+                  relative
+                  min-h-[160px]
+                "
+              >
+                {product.image && (
+                  <img
+                    src={getAssetUrl(product.image)}
+                    alt={product.name}
                     className="
+                      w-32
+                      md:w-44
+                      h-auto
+                      object-contain
+                      object-center
                       bg-white
-                      border border-zinc-200
-                      shadow-md
-                      hover:shadow-2xl
-                      hover:-translate-y-1
-                      transition-all
-                      duration-300
-                      rounded-3xl
-                      overflow-hidden
-                      flex
-                      relative
-                      min-h-[160px]
+                      shrink-0
+                      p-2
                     "
-                  >
-                    {product.image && (
-                      <img
-                        src={getAssetUrl(product.image)}
-                        alt={product.name}
-                        className="
-                          w-32
-                          md:w-44
-                          h-auto
-                          object-contain
-                          object-center
-                          bg-white
-                          shrink-0
-                          p-2
-                        "
-                      />
-                    )}
+                  />
+                )}
 
-                    <div className="p-4 md:p-5 flex-1 pr-16 md:pr-20 min-w-0">
-                      <h3 className="text-base md:text-xl font-black text-[#20242b] line-clamp-2">
-                        {product.name}
-                      </h3>
+                <div className="p-4 md:p-5 flex-1 pr-16 md:pr-20 min-w-0">
+                  <h3 className="text-base md:text-xl font-black text-[#20242b] line-clamp-2">
+                    {product.name}
+                  </h3>
 
-                      {description && (
-                        <p className="text-zinc-500 text-sm mt-1 line-clamp-2">
-                          {description}
-                        </p>
-                      )}
+                  {description && (
+                    <p className="text-zinc-500 text-sm mt-1 line-clamp-2">
+                      {description}
+                    </p>
+                  )}
 
-                      <p className="text-red-600 text-xl md:text-2xl font-black mt-3">
-                        {formatMoney(getProductPrice(product, customer))}
-                      </p>
+                  <p className="text-red-600 text-xl md:text-2xl font-black mt-3">
+                    {formatMoney(getProductPrice(product, customer))}
+                  </p>
 
-                      {customer && Number(product.clientPrice || 0) > 0 && (
-                        <p className="text-xs font-bold text-green-600 mt-1">
-                          Preço especial para cliente
-                        </p>
-                      )}
-                    </div>
+                  {customer && Number(product.clientPrice || 0) > 0 && (
+                    <p className="text-xs font-bold text-green-600 mt-1">
+                      Preço especial para cliente
+                    </p>
+                  )}
+                </div>
 
-                    <button
-                      onClick={() => openItemModal(item)}
-                      className="
-                        absolute
-                        right-4
-                        bottom-4
-                        bg-red-600
-                        hover:bg-red-700
-                        text-white
-                        w-12
-                        h-12
-                        md:w-16
-                        md:h-16
-                        rounded-full
-                        font-black
-                        text-3xl
-                        md:text-4xl
-                        shadow-xl
-                        flex
-                        items-center
-                        justify-center
-                        hover:scale-110
-                        transition
-                      "
-                    >
-                      +
-                    </button>
-                  </div>
-                );
-              };
+                <button
+                  onClick={() => openItemModal(item)}
+                  className="
+                    absolute
+                    right-4
+                    bottom-4
+                    bg-red-600
+                    hover:bg-red-700
+                    text-white
+                    w-12
+                    h-12
+                    md:w-16
+                    md:h-16
+                    rounded-full
+                    font-black
+                    text-3xl
+                    md:text-4xl
+                    shadow-xl
+                    flex
+                    items-center
+                    justify-center
+                    hover:scale-110
+                    transition
+                  "
+                >
+                  +
+                </button>
+              </div>
+            );
+          };
 
 
               return (
