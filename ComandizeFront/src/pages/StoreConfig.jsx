@@ -44,6 +44,7 @@ function StoreConfig() {
     title: "",
     subtitle: "",
     address: "",
+    customDomain: "",
     schedules: {
       domingo: { ...defaultSchedule, active: false },
       segunda: { ...defaultSchedule },
@@ -70,7 +71,13 @@ function StoreConfig() {
       const data = await response.json();
       if (response.status === 401) return handleUnauthorized();
       if (!response.ok) return setMessage(data.message || "Erro ao carregar configuração.");
-      setForm((old) => ({ title: data.title || "", subtitle: data.subtitle || "", address: data.address || "", schedules: data.schedules || old.schedules }));
+      setForm((old) => ({
+        title: data.title || "",
+        subtitle: data.subtitle || "",
+        address: data.address || "",
+        customDomain: data.customDomain || "",
+        schedules: data.schedules || old.schedules,
+      }));
     } catch {
       setMessage("Erro de conexão ao carregar configuração.");
     }
@@ -107,6 +114,7 @@ function StoreConfig() {
       formData.append("title", form.title);
       formData.append("subtitle", form.subtitle);
       formData.append("address", form.address);
+      formData.append("customDomain", form.customDomain);
       formData.append("schedules", JSON.stringify(form.schedules));
       if (bannerImage) formData.append("bannerImage", bannerImage);
       const response = await fetch(API_URL, { method: "PUT", headers, body: formData });
@@ -218,6 +226,31 @@ function StoreConfig() {
               <input maxLength={80} placeholder="Texto maior sobre o banner. Ex: Carnes Nobres" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-[#f8fafc] border border-[#d1d5db] rounded-xl p-3 outline-none" />
               <input maxLength={120} placeholder="Subtítulo sobre o banner. Ex: Carnes frescas todos os dias" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className="bg-[#f8fafc] border border-[#d1d5db] rounded-xl p-3 outline-none" />
               <input maxLength={160} placeholder="Endereço exibido abaixo da imagem do banner" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="md:col-span-2 bg-[#f8fafc] border border-[#d1d5db] rounded-xl p-3 outline-none" />
+
+              <div className="md:col-span-2 bg-orange-50 border border-orange-200 rounded-2xl p-4 space-y-2">
+                <label className="block text-sm font-black text-[#ff9811]">Domínio próprio do catálogo</label>
+                <input
+                  maxLength={160}
+                  placeholder="Ex: carnessanrafael.com.br"
+                  value={form.customDomain}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      customDomain: e.target.value
+                        .toLowerCase()
+                        .replace(/^https?:\/\//, "")
+                        .replace(/^www\./, "")
+                        .replace(/\/.*$/, "")
+                        .trim(),
+                    })
+                  }
+                  className="w-full bg-white border border-[#d1d5db] rounded-xl p-3 outline-none"
+                />
+                <p className="text-xs text-slate-600">
+                  Use somente o domínio, sem https:// e sem barra. Exemplo: carnessanrafael.com.br.
+                  O DNS do cliente deve apontar para a VPS do COMANDIZE.
+                </p>
+              </div>
               <label className="md:col-span-2 bg-[#f8fafc] border-2 border-dashed border-[#d1d5db] hover:border-[#ff9811] rounded-2xl p-6 shadow-sm cursor-pointer transition text-center">
                 <span className="block text-3xl mb-2">🖼️</span>
                 <strong className="block text-[#ff9811]">Adicionar imagem do banner</strong>

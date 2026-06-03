@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import StoreConfig from "../models/StoreConfig.js";
+import User from "../models/User.js";
 
 const dayKeys = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
 const todayKeyString = () => new Date().toISOString().slice(0, 10);
@@ -52,6 +53,18 @@ async function saveBannerImage(file, userId) {
     .toFile(absolutePath);
 
   return `${PUBLIC_UPLOAD_PREFIX}/${filename}`;
+}
+
+
+function normalizeCustomDomain(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0]
+    .split(":")[0]
+    .slice(0, 160);
 }
 
 function getScheduleStatus(config) {
@@ -116,7 +129,10 @@ async function ensureConfig(req) {
 export const getMyStoreConfig = async (req, res) => {
   try {
     const config = await ensureConfig(req);
-    return res.json(config);
+    return res.json({
+      ...config.toObject(),
+      customDomain: req.user.customDomain || "",
+    });
   } catch (error) {
     return res.status(500).json({ message: "Erro ao buscar configurações.", error: error.message });
   }
@@ -180,7 +196,7 @@ export const updateCatalogStatus = async (req, res) => {
 
 export const updateMyStoreConfig = async (req, res) => {
   try {
-    const { title, subtitle, address, schedules, manualCatalogStatus } = req.body;
+    const { title, subtitle, address, schedules, manualCatalogStatus, customDomain } = req.body;
     const currentConfig = await StoreConfig.findOne({ user: req.user._id });
 
     const updateData = {
@@ -198,6 +214,25 @@ export const updateMyStoreConfig = async (req, res) => {
       updateData.schedules = typeof schedules === "string" ? JSON.parse(schedules) : schedules;
     }
 
+    const normalizedCustomDomain = normalizeCustomDomain(customDomain);
+
+    if (normalizedCustomDomain) {
+      const domainInUse = await User.findOne({
+        _id: { $ne: req.user._id },
+        customDomain: normalizedCustomDomain,
+      }).select("_id storeName catalogUrl");
+
+      if (domainInUse) {
+        return res.status(409).json({
+          message: "Este domínio próprio já está vinculado a outra loja.",
+        });
+      }
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      customDomain: normalizedCustomDomain,
+    });
+
     if (req.file) {
       const newBannerPath = await saveBannerImage(req.file, req.user._id);
       updateData.bannerImage = newBannerPath;
@@ -210,7 +245,13 @@ export const updateMyStoreConfig = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    return res.json({ message: "Configurações atualizadas com sucesso.", config });
+    return res.json({
+      message: "Configurações atualizadas com sucesso.",
+      config: {
+        ...config.toObject(),
+        customDomain: normalizedCustomDomain,
+      },
+    });
   } catch (error) {
     return res.status(error.statusCode || 500).json({
       message: error.statusCode ? error.message : "Erro ao atualizar configurações.",

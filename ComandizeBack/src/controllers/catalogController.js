@@ -21,7 +21,8 @@ const normalizeDomain = (value = "") =>
     .replace(/^https?:\/\//, "")
     .replace(/^www\./, "")
     .split("/")[0]
-    .split(":")[0];
+    .split(":")[0]
+    .slice(0, 160);
 
 const isStoreOpenBySchedule = (schedule) => {
   if (!schedule || !schedule.active) return false;
@@ -72,8 +73,13 @@ export const getPublicCatalog = async (req, res) => {
     const normalizedDomain = normalizeDomain(lookup);
     const today = dayMap[new Date().getDay()];
 
+    if (!lookup) {
+      return res.status(404).json({ message: "Catálogo não encontrado ou loja inativa." });
+    }
+
     const store = await User.findOne({
       active: true,
+      isSubAccount: { $ne: true },
       $or: [
         { catalogUrl: lookup },
         { customDomain: normalizedDomain },
