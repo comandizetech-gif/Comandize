@@ -1521,63 +1521,210 @@ ${checkout.storeMessage || "Sem observação"}
               const isCarousel = section.displayMode === "CAROUSEL";
 
               const renderProductCard = (item, carousel = false) => {
-                const product = item.product;
+  const product = item.product;
 
-                if (!product) return null;
+  if (!product) return null;
 
-                if (carousel) {
-                  return (
-                    <div
-                      key={item._id}
-                      className="w-full bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden relative flex flex-col md:min-h-[430px]"
-                    >
-                      <div className="w-full h-44 sm:h-52 md:h-60 bg-zinc-100 overflow-hidden">
-                        {product.image ? (
-                          <img
-                            src={getAssetUrl(product.image)}
-                            alt={product.name}
-                            className="w-full h-full object-cover object-center"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-zinc-400 font-black">
-                            Sem imagem
-                          </div>
-                        )}
-                      </div>
+  const description = item.description || "";
 
-                      <div className="p-4 md:p-5 flex flex-col flex-1">
-                        <h3 className="text-lg md:text-xl font-black text-[#20242b] line-clamp-2 pr-14 md:pr-1">
-                          {product.name}
-                        </h3>
+  if (carousel) {
+    return (
+      <div
+        key={item._id}
+        className="
+          w-full
+          bg-white
+          border border-zinc-200
+          shadow-lg
+          rounded-[28px]
+          overflow-hidden
+          relative
+          flex
+          flex-col
+          min-h-[520px]
+          md:min-h-[430px]
+        "
+      >
+        <div
+          className="
+            w-full
+            bg-white
+            p-3
+            md:p-0
+          "
+        >
+          {product.image ? (
+            <img
+              src={getAssetUrl(product.image)}
+              alt={product.name}
+              className="
+                w-full
+                h-[300px]
+                md:h-60
+                object-contain
+                object-center
+                rounded-2xl
+                bg-white
+              "
+            />
+          ) : (
+            <div className="w-full h-[300px] md:h-60 flex items-center justify-center text-zinc-400 font-black bg-zinc-100 rounded-2xl">
+              Sem imagem
+            </div>
+          )}
+        </div>
 
-                        {item.description && (
-                          <p className="text-zinc-500 text-sm mt-2 leading-relaxed line-clamp-2 md:line-clamp-3">
-                            {item.description}
-                          </p>
-                        )}
+        <div className="p-6 flex flex-col flex-1">
+          <h3 className="text-2xl md:text-xl font-black text-[#20242b] leading-tight">
+            {product.name}
+          </h3>
 
-                        {customer && Number(product.clientPrice || 0) > 0 && (
-                          <p className="text-xs font-bold text-green-600 mt-2">
-                            Preço especial para cliente
-                          </p>
-                        )}
+          {description && (
+            <p
+              className="
+                text-zinc-500
+                text-lg
+                md:text-sm
+                mt-4
+                leading-relaxed
+                max-h-[96px]
+                overflow-hidden
+              "
+            >
+              {description}
+            </p>
+          )}
 
-                        <div className="mt-auto pt-3 md:pt-5 pr-14">
-                          <p className="text-red-600 text-2xl md:text-3xl font-black leading-tight">
-                            {formatMoney(getProductPrice(product, customer))}
-                          </p>
-                        </div>
-                      </div>
+          {customer && Number(product.clientPrice || 0) > 0 && (
+            <p className="text-xs font-bold text-green-600 mt-3">
+              Preço especial para cliente
+            </p>
+          )}
 
-                      <button
-                        onClick={() => openItemModal(item)}
-                        className="absolute right-4 bottom-4 bg-red-600 hover:bg-red-700 text-white w-12 h-12 md:w-14 md:h-14 rounded-full font-black text-3xl shadow-xl flex items-center justify-center hover:scale-110 transition"
-                      >
-                        +
-                      </button>
-                    </div>
-                  );
-                }
+          <div className="mt-auto pt-6 pr-20">
+            <p className="text-red-600 text-4xl md:text-3xl font-black leading-tight">
+              {formatMoney(getProductPrice(product, customer))}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => openItemModal(item)}
+          className="
+            absolute
+            right-6
+            bottom-6
+            bg-red-600
+            hover:bg-red-700
+            text-white
+            w-16
+            h-16
+            md:w-14
+            md:h-14
+            rounded-full
+            font-black
+            text-4xl
+            shadow-xl
+            flex
+            items-center
+            justify-center
+            hover:scale-110
+            transition
+          "
+        >
+          +
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      key={item._id}
+      className="
+        bg-white
+        border border-zinc-200
+        shadow-md
+        hover:shadow-2xl
+        hover:-translate-y-1
+        transition-all
+        duration-300
+        rounded-3xl
+        overflow-hidden
+        flex
+        relative
+        min-h-[160px]
+      "
+    >
+      {product.image && (
+        <img
+          src={getAssetUrl(product.image)}
+          alt={product.name}
+          className="
+            w-32
+            md:w-44
+            h-auto
+            object-contain
+            object-center
+            bg-white
+            shrink-0
+            p-2
+          "
+        />
+      )}
+
+      <div className="p-4 md:p-5 flex-1 pr-16 md:pr-20 min-w-0">
+        <h3 className="text-base md:text-xl font-black text-[#20242b] line-clamp-2">
+          {product.name}
+        </h3>
+
+        {description && (
+          <p className="text-zinc-500 text-sm mt-1 line-clamp-2">
+            {description}
+          </p>
+        )}
+
+        <p className="text-red-600 text-xl md:text-2xl font-black mt-3">
+          {formatMoney(getProductPrice(product, customer))}
+        </p>
+
+        {customer && Number(product.clientPrice || 0) > 0 && (
+          <p className="text-xs font-bold text-green-600 mt-1">
+            Preço especial para cliente
+          </p>
+        )}
+      </div>
+
+      <button
+        onClick={() => openItemModal(item)}
+        className="
+          absolute
+          right-4
+          bottom-4
+          bg-red-600
+          hover:bg-red-700
+          text-white
+          w-12
+          h-12
+          md:w-16
+          md:h-16
+          rounded-full
+          font-black
+          text-3xl
+          md:text-4xl
+          shadow-xl
+          flex
+          items-center
+          justify-center
+          hover:scale-110
+          transition
+        "
+      >
+        +
+      </button>
+    </div>
+  );
+};
 
                 return (
                   <div
