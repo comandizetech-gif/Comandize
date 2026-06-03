@@ -1521,221 +1521,148 @@ ${checkout.storeMessage || "Sem observação"}
               const isCarousel = section.displayMode === "CAROUSEL";
 
               const renderProductCard = (item, carousel = false) => {
-  const product = item.product;
+                const product = item.product;
 
-  if (!product) return null;
+                if (!product) return null;
 
-  const description = item.description || "";
+                const description = item.description || "";
 
-  if (carousel) {
-    return (
-      <div
-        key={item._id}
-        className="
-          w-full
-          bg-white
-          border border-zinc-200
-          shadow-lg
-          rounded-[28px]
-          overflow-hidden
-          relative
-          flex
-          flex-col
-          min-h-[520px]
-          md:min-h-[430px]
-        "
-      >
-        <div
-          className="
-            w-full
-            bg-white
-            p-3
-            md:p-0
-          "
-        >
-          {product.image ? (
-            <img
-              src={getAssetUrl(product.image)}
-              alt={product.name}
-              className="
-                w-full
-                h-[300px]
-                md:h-60
-                object-contain
-                object-center
-                rounded-2xl
-                bg-white
-              "
-            />
-          ) : (
-            <div className="w-full h-[300px] md:h-60 flex items-center justify-center text-zinc-400 font-black bg-zinc-100 rounded-2xl">
-              Sem imagem
-            </div>
-          )}
-        </div>
+                if (carousel) {
+                  return (
+                    <div
+                      key={item._id}
+                      className="
+                        w-full
+                        bg-white
+                        border border-zinc-200
+                        shadow-lg
+                        rounded-[28px]
+                        overflow-hidden
+                        relative
+                        flex
+                        flex-col
+                        min-h-[520px]
+                        md:min-h-[500px]
+                      "
+                    >
+                      <div className="w-full h-[300px] md:h-[260px] bg-white overflow-hidden p-3">
+                        {product.image ? (
+                          <img
+                            src={getAssetUrl(product.image)}
+                            alt={product.name}
+                            className="
+                              w-full
+                              h-full
+                              object-contain
+                              object-center
+                              rounded-2xl
+                              bg-white
+                            "
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-400 font-black bg-zinc-100 rounded-2xl">
+                            Sem imagem
+                          </div>
+                        )}
+                      </div>
 
-        <div className="p-6 flex flex-col flex-1">
-          <h3 className="text-2xl md:text-xl font-black text-[#20242b] leading-tight">
-            {product.name}
-          </h3>
+                      <div className="p-6 flex flex-col flex-1">
+                        <h3 className="text-2xl md:text-xl font-black text-[#20242b] leading-tight">
+                          {product.name}
+                        </h3>
 
-          {description && (
-            <p
-              className="
-                text-zinc-500
-                text-lg
-                md:text-sm
-                mt-4
-                leading-relaxed
-                max-h-[96px]
-                overflow-hidden
-              "
-            >
-              {description}
-            </p>
-          )}
+                        {description && (
+                          <p
+                            className="
+                              text-zinc-500
+                              text-lg
+                              md:text-sm
+                              mt-4
+                              leading-relaxed
+                              max-h-[104px]
+                              md:max-h-[86px]
+                              overflow-hidden
+                            "
+                          >
+                            {description}
+                          </p>
+                        )}
 
-          {customer && Number(product.clientPrice || 0) > 0 && (
-            <p className="text-xs font-bold text-green-600 mt-3">
-              Preço especial para cliente
-            </p>
-          )}
+                        {customer && Number(product.clientPrice || 0) > 0 && (
+                          <p className="text-xs font-bold text-green-600 mt-3">
+                            Preço especial para cliente
+                          </p>
+                        )}
 
-          <div className="mt-auto pt-6 pr-20">
-            <p className="text-red-600 text-4xl md:text-3xl font-black leading-tight">
-              {formatMoney(getProductPrice(product, customer))}
-            </p>
-          </div>
-        </div>
+                        <div className="mt-auto pt-6 pr-20">
+                          <p className="text-red-600 text-4xl md:text-3xl font-black leading-tight">
+                            {formatMoney(getProductPrice(product, customer))}
+                          </p>
+                        </div>
+                      </div>
 
-        <button
-          onClick={() => openItemModal(item)}
-          className="
-            absolute
-            right-6
-            bottom-6
-            bg-red-600
-            hover:bg-red-700
-            text-white
-            w-16
-            h-16
-            md:w-14
-            md:h-14
-            rounded-full
-            font-black
-            text-4xl
-            shadow-xl
-            flex
-            items-center
-            justify-center
-            hover:scale-110
-            transition
-          "
-        >
-          +
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      key={item._id}
-      className="
-        bg-white
-        border border-zinc-200
-        shadow-md
-        hover:shadow-2xl
-        hover:-translate-y-1
-        transition-all
-        duration-300
-        rounded-3xl
-        overflow-hidden
-        flex
-        relative
-        min-h-[160px]
-      "
-    >
-      {product.image && (
-        <img
-          src={getAssetUrl(product.image)}
-          alt={product.name}
-          className="
-            w-32
-            md:w-44
-            h-auto
-            object-contain
-            object-center
-            bg-white
-            shrink-0
-            p-2
-          "
-        />
-      )}
-
-      <div className="p-4 md:p-5 flex-1 pr-16 md:pr-20 min-w-0">
-        <h3 className="text-base md:text-xl font-black text-[#20242b] line-clamp-2">
-          {product.name}
-        </h3>
-
-        {description && (
-          <p className="text-zinc-500 text-sm mt-1 line-clamp-2">
-            {description}
-          </p>
-        )}
-
-        <p className="text-red-600 text-xl md:text-2xl font-black mt-3">
-          {formatMoney(getProductPrice(product, customer))}
-        </p>
-
-        {customer && Number(product.clientPrice || 0) > 0 && (
-          <p className="text-xs font-bold text-green-600 mt-1">
-            Preço especial para cliente
-          </p>
-        )}
-      </div>
-
-      <button
-        onClick={() => openItemModal(item)}
-        className="
-          absolute
-          right-4
-          bottom-4
-          bg-red-600
-          hover:bg-red-700
-          text-white
-          w-12
-          h-12
-          md:w-16
-          md:h-16
-          rounded-full
-          font-black
-          text-3xl
-          md:text-4xl
-          shadow-xl
-          flex
-          items-center
-          justify-center
-          hover:scale-110
-          transition
-        "
-      >
-        +
-      </button>
-    </div>
-  );
-};
+                      <button
+                        onClick={() => openItemModal(item)}
+                        className="
+                          absolute
+                          right-6
+                          bottom-6
+                          bg-red-600
+                          hover:bg-red-700
+                          text-white
+                          w-16
+                          h-16
+                          md:w-14
+                          md:h-14
+                          rounded-full
+                          font-black
+                          text-4xl
+                          shadow-xl
+                          flex
+                          items-center
+                          justify-center
+                          hover:scale-110
+                          transition
+                        "
+                      >
+                        +
+                      </button>
+                    </div>
+                  );
+                }
 
                 return (
                   <div
                     key={item._id}
-                    className="bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden flex relative min-h-[160px]"
+                    className="
+                      bg-white
+                      border border-zinc-200
+                      shadow-md
+                      hover:shadow-2xl
+                      hover:-translate-y-1
+                      transition-all
+                      duration-300
+                      rounded-3xl
+                      overflow-hidden
+                      flex
+                      relative
+                      min-h-[160px]
+                    "
                   >
                     {product.image && (
                       <img
                         src={getAssetUrl(product.image)}
                         alt={product.name}
-                        className="w-32 md:w-44 h-auto object-cover object-center shrink-0"
+                        className="
+                          w-32
+                          md:w-44
+                          h-auto
+                          object-contain
+                          object-center
+                          bg-white
+                          shrink-0
+                          p-2
+                        "
                       />
                     )}
 
@@ -1744,9 +1671,9 @@ ${checkout.storeMessage || "Sem observação"}
                         {product.name}
                       </h3>
 
-                      {item.description && (
+                      {description && (
                         <p className="text-zinc-500 text-sm mt-1 line-clamp-2">
-                          {item.description}
+                          {description}
                         </p>
                       )}
 
@@ -1763,7 +1690,28 @@ ${checkout.storeMessage || "Sem observação"}
 
                     <button
                       onClick={() => openItemModal(item)}
-                      className="absolute right-4 bottom-4 bg-red-600 hover:bg-red-700 text-white w-12 h-12 md:w-16 md:h-16 rounded-full font-black text-3xl md:text-4xl shadow-xl flex items-center justify-center hover:scale-110 transition"
+                      className="
+                        absolute
+                        right-4
+                        bottom-4
+                        bg-red-600
+                        hover:bg-red-700
+                        text-white
+                        w-12
+                        h-12
+                        md:w-16
+                        md:h-16
+                        rounded-full
+                        font-black
+                        text-3xl
+                        md:text-4xl
+                        shadow-xl
+                        flex
+                        items-center
+                        justify-center
+                        hover:scale-110
+                        transition
+                      "
                     >
                       +
                     </button>
@@ -1771,7 +1719,7 @@ ${checkout.storeMessage || "Sem observação"}
                 );
               };
 
-              return (
+
                 <section key={section._id}>
                   <div className="flex items-end justify-between gap-3 mb-2">
                     <h2 className="text-3xl md:text-4xl font-black text-red-600">
