@@ -8,7 +8,14 @@ function Login() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [rememberEmail, setRememberEmail] = useState(() => {
+    return localStorage.getItem("comandize_remember_email") === "true";
+  });
+
+  const [loginData, setLoginData] = useState(() => ({
+    email: localStorage.getItem("comandize_saved_email") || "",
+    password: "",
+  }));
   const [registerData, setRegisterData] = useState({
     name: "",
     email: "",
@@ -35,6 +42,14 @@ function Login() {
       if (!response.ok) {
         setMessage(data.message || "Erro ao fazer login.");
         return;
+      }
+
+      if (rememberEmail) {
+        localStorage.setItem("comandize_remember_email", "true");
+        localStorage.setItem("comandize_saved_email", loginData.email.trim().toLowerCase());
+      } else {
+        localStorage.removeItem("comandize_remember_email");
+        localStorage.removeItem("comandize_saved_email");
       }
 
       localStorage.setItem("token", data.token);
@@ -158,6 +173,16 @@ function Login() {
               onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
               required
             />
+
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-600 select-none">
+              <input
+                type="checkbox"
+                checked={rememberEmail}
+                onChange={(e) => setRememberEmail(e.target.checked)}
+                className="w-4 h-4 accent-[#ff9811]"
+              />
+              Manter e-mail salvo neste aparelho
+            </label>
 
             <button
               disabled={loading}

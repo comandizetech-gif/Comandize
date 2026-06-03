@@ -2,6 +2,30 @@ import { useEffect, useState } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://comandize.com.br";
 
+const MAIN_DOMAINS = [
+  "comandize.com.br",
+  "www.comandize.com.br",
+  "localhost",
+  "127.0.0.1",
+];
+
+function isCustomDomainHost() {
+  const host = window.location.hostname.toLowerCase();
+  return !MAIN_DOMAINS.includes(host);
+}
+
+function getCatalogLookupKey() {
+  const pathKey = window.location.pathname.replace(/^\/+|\/+$/g, "");
+
+  if (pathKey) return pathKey;
+
+  if (isCustomDomainHost()) {
+    return window.location.hostname.toLowerCase().replace(/^www\./, "");
+  }
+
+  return "";
+}
+
 function getAssetUrl(path = "") {
   if (!path) return "";
   if (path.startsWith("data:") || path.startsWith("http://") || path.startsWith("https://")) {
@@ -257,7 +281,7 @@ function PublicCatalog() {
     storeMessage: "",
   });
 
-  const catalogUrl = window.location.pathname.replace("/", "");
+  const catalogUrl = getCatalogLookupKey();
 
   const getCatalogHash = () =>
     decodeURIComponent(window.location.hash.replace("#", ""));
@@ -383,7 +407,7 @@ function PublicCatalog() {
 
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/catalog/${catalogUrl}`)
+    fetch(`${API_BASE_URL}/api/catalog/${encodeURIComponent(catalogUrl)}`)
       .then((res) => res.json())
       .then((data) => {
         setStore(data.store);

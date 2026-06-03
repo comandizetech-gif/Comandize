@@ -37,6 +37,7 @@ const userSchema = new mongoose.Schema(
     active: { type: Boolean, default: false },
     storeName: { type: String, required: true, trim: true, maxlength: 120 },
     catalogUrl: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 80 },
+    customDomain: { type: String, default: "", lowercase: true, trim: true, maxlength: 160 },
     parentStore: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
     isSubAccount: { type: Boolean, default: false, index: true },
     permissions: { type: [pagePermissionSchema], default: [] },
@@ -44,6 +45,13 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+userSchema.index(
+  { customDomain: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { customDomain: { $type: "string", $gt: "" } },
+  }
+);
 userSchema.index({ parentStore: 1, email: 1 });
 userSchema.index({ parentStore: 1, active: 1 });
 

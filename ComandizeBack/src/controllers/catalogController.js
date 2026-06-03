@@ -14,6 +14,15 @@ const dayMap = {
 
 const todayKeyString = () => new Date().toISOString().slice(0, 10);
 
+const normalizeDomain = (value = "") =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0]
+    .split(":")[0];
+
 const isStoreOpenBySchedule = (schedule) => {
   if (!schedule || !schedule.active) return false;
 
@@ -43,19 +52,11 @@ const getCatalogOpenStatus = (config, todaySchedule) => {
     config.manualCatalogDate === todayKeyString();
 
   if (manualIsValidToday && config.manualCatalogStatus === "OPEN") {
-    return {
-      isOpen: true,
-      mode: "OPEN",
-      label: "Aberto manualmente pelo painel até virar o dia",
-    };
+    return { isOpen: true, mode: "OPEN", label: "Aberto manualmente pelo painel até virar o dia" };
   }
 
   if (manualIsValidToday && config.manualCatalogStatus === "CLOSED") {
-    return {
-      isOpen: false,
-      mode: "CLOSED",
-      label: "Fechado manualmente pelo painel até virar o dia",
-    };
+    return { isOpen: false, mode: "CLOSED", label: "Fechado manualmente pelo painel até virar o dia" };
   }
 
   return {
@@ -67,25 +68,26 @@ const getCatalogOpenStatus = (config, todaySchedule) => {
 
 export const getPublicCatalog = async (req, res) => {
   try {
-    const { catalogUrl } = req.params;
+    const lookup = String(req.params.catalogUrl || "").trim().toLowerCase();
+    const normalizedDomain = normalizeDomain(lookup);
     const today = dayMap[new Date().getDay()];
 
-    const store = await User.findOne({ catalogUrl, active: true }).select(
-      "storeName catalogUrl phone"
-    );
+    const store = await User.findOne({
+      active: true,
+      $or: [
+        { catalogUrl: lookup },
+        { customDomain: normalizedDomain },
+        { customDomain: `www.${normalizedDomain}` },
+      ],
+    }).select("storeName catalogUrl customDomain phone");
 
     if (!store) {
-      return res.status(404).json({
-        message: "Catálogo não encontrado ou loja inativa.",
-      });
+      return res.status(404).json({ message: "Catálogo não encontrado ou loja inativa." });
     }
 
     const config = await StoreConfig.findOne({ user: store._id });
 
-    if (
-      config?.manualCatalogStatus !== "AUTO" &&
-      config.manualCatalogDate !== todayKeyString()
-    ) {
+    if (config?.manualCatalogStatus !== "AUTO" && config.manualCatalogDate !== todayKeyString()) {
       config.manualCatalogStatus = "AUTO";
       config.manualCatalogDate = "";
       await config.save();
@@ -96,25 +98,19 @@ export const getPublicCatalog = async (req, res) => {
 
     const sections = await CatalogSection.find({ user: store._id })
       .populate("products.product")
-      .sort({ order: 1, createdAt: 1 });
+      .sort({ createdAt: 1 });
 
     const visibleSections = sections
       .map((section) => {
         const products = section.products
-          .filter(
-            (item) =>
-              item.visible &&
-              item.product &&
-              item.availableDays.includes(today)
-          )
+          .filter((item) => item.visible && item.product && item.availableDays.includes(today))
           .sort((a, b) => b.priority - a.priority);
 
         return {
           _id: section._id,
           name: section.name,
-          displayMode: section.displayMode || "NORMAL",
-          order: Number(section.order || 0),
-          sectionBannerImage: section.sectionBannerImage || "",
+          displayMode: section.displayMode,
+          sectionBannerImage: section.sectionBannerImage,
           products,
         };
       })
@@ -130,9 +126,6 @@ export const getPublicCatalog = async (req, res) => {
       sections: visibleSections,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: "Erro ao carregar catálogo.",
-      error: error.message,
-    });
+    return res.status(500).json({ message: "Erro ao carregar catálogo.", error: error.message });
   }
 };
