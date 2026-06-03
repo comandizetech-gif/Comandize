@@ -1544,11 +1544,11 @@ ${checkout.storeMessage || "Sem observação"}
                         relative
                         flex
                         flex-col
-                        min-h-[355px]
-                        md:min-h-[390px]
+                        min-h-[390px]
+                        md:min-h-[430px]
                       "
                     >
-                      <div className="w-full h-[150px] sm:h-[170px] md:h-[190px] bg-white overflow-hidden p-2">
+                      <div className="w-full h-[185px] sm:h-[205px] md:h-[225px] bg-white overflow-hidden p-1">
                         {product.image ? (
                           <img
                             src={getAssetUrl(product.image)}
@@ -1560,6 +1560,9 @@ ${checkout.storeMessage || "Sem observação"}
                               object-center
                               rounded-xl
                               bg-white
+                              scale-125
+                              md:scale-110
+                              transition-transform
                             "
                           />
                         ) : (
@@ -1570,7 +1573,7 @@ ${checkout.storeMessage || "Sem observação"}
                       </div>
 
                       <div className="p-4 md:p-5 flex flex-col flex-1 min-w-0">
-                        <h3 className="text-base md:text-xl font-black text-[#20242b] leading-tight line-clamp-2">
+                        <h3 className="text-lg md:text-xl font-black text-[#20242b] leading-tight line-clamp-2">
                           {product.name}
                         </h3>
 
@@ -1578,12 +1581,12 @@ ${checkout.storeMessage || "Sem observação"}
                           <p
                             className="
                               text-zinc-500
-                              text-xs
+                              text-[13px]
                               md:text-sm
                               mt-2
                               leading-snug
-                              max-h-[64px]
-                              md:max-h-[74px]
+                              max-h-[78px]
+                              md:max-h-[84px]
                               overflow-hidden
                             "
                           >
@@ -1598,7 +1601,7 @@ ${checkout.storeMessage || "Sem observação"}
                         )}
 
                         <div className="mt-auto pt-3 pr-12 md:pr-16">
-                          <p className="text-red-600 text-2xl md:text-3xl font-black leading-tight">
+                          <p className="text-red-600 text-[26px] md:text-3xl font-black leading-tight">
                             {formatMoney(getProductPrice(product, customer))}
                           </p>
                         </div>
@@ -1802,8 +1805,8 @@ ${checkout.storeMessage || "Sem observação"}
           <div
             key={item._id}
             className="
-              min-w-[68%]
-              max-w-[245px]
+              min-w-[78%]
+              max-w-[280px]
               snap-center
               flex-shrink-0
             "
