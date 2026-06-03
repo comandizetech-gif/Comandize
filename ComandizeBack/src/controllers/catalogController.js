@@ -21,8 +21,7 @@ const normalizeDomain = (value = "") =>
     .replace(/^https?:\/\//, "")
     .replace(/^www\./, "")
     .split("/")[0]
-    .split(":")[0]
-    .slice(0, 160);
+    .split(":")[0];
 
 const isStoreOpenBySchedule = (schedule) => {
   if (!schedule || !schedule.active) return false;
@@ -73,13 +72,8 @@ export const getPublicCatalog = async (req, res) => {
     const normalizedDomain = normalizeDomain(lookup);
     const today = dayMap[new Date().getDay()];
 
-    if (!lookup) {
-      return res.status(404).json({ message: "Catálogo não encontrado ou loja inativa." });
-    }
-
     const store = await User.findOne({
       active: true,
-      isSubAccount: { $ne: true },
       $or: [
         { catalogUrl: lookup },
         { customDomain: normalizedDomain },
@@ -102,19 +96,23 @@ export const getPublicCatalog = async (req, res) => {
     const todaySchedule = config?.schedules?.[today];
     const catalogStatus = getCatalogOpenStatus(config, todaySchedule);
 
+    // IMPORTANTE:
+    // A ordem do catálogo público precisa seguir a mesma ordem definida no CatalogManager.
+    // Antes estava por createdAt e ignorava os botões Subir/Descer.
     const sections = await CatalogSection.find({ user: store._id })
       .populate("products.product")
-      .sort({ createdAt: 1 });
+      .sort({ order: 1, createdAt: 1 });
 
     const visibleSections = sections
       .map((section) => {
         const products = section.products
           .filter((item) => item.visible && item.product && item.availableDays.includes(today))
-          .sort((a, b) => b.priority - a.priority);
+          .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0));
 
         return {
           _id: section._id,
           name: section.name,
+          order: section.order || 0,
           displayMode: section.displayMode,
           sectionBannerImage: section.sectionBannerImage,
           products,

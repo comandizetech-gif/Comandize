@@ -1529,9 +1529,9 @@ ${checkout.storeMessage || "Sem observação"}
                   return (
                     <div
                       key={item._id}
-                      className="w-full bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden relative flex flex-col min-h-[430px]"
+                      className="w-full bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden relative flex flex-col md:min-h-[430px]"
                     >
-                      <div className="w-full h-52 sm:h-56 md:h-60 bg-zinc-100 overflow-hidden">
+                      <div className="w-full h-44 sm:h-52 md:h-60 bg-zinc-100 overflow-hidden">
                         {product.image ? (
                           <img
                             src={getAssetUrl(product.image)}
@@ -1546,12 +1546,12 @@ ${checkout.storeMessage || "Sem observação"}
                       </div>
 
                       <div className="p-4 md:p-5 flex flex-col flex-1">
-                        <h3 className="text-lg md:text-xl font-black text-[#20242b] line-clamp-2 pr-1">
+                        <h3 className="text-lg md:text-xl font-black text-[#20242b] line-clamp-2 pr-14 md:pr-1">
                           {product.name}
                         </h3>
 
                         {item.description && (
-                          <p className="text-zinc-500 text-sm mt-2 line-clamp-3">
+                          <p className="text-zinc-500 text-sm mt-2 leading-relaxed line-clamp-2 md:line-clamp-3">
                             {item.description}
                           </p>
                         )}
@@ -1562,7 +1562,7 @@ ${checkout.storeMessage || "Sem observação"}
                           </p>
                         )}
 
-                        <div className="mt-auto pt-5 pr-14">
+                        <div className="mt-auto pt-3 md:pt-5 pr-14">
                           <p className="text-red-600 text-2xl md:text-3xl font-black leading-tight">
                             {formatMoney(getProductPrice(product, customer))}
                           </p>
@@ -1632,7 +1632,7 @@ ${checkout.storeMessage || "Sem observação"}
                     </h2>
 
                     {isCarousel && section.products.length > 0 && (
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="hidden md:flex items-center gap-2 shrink-0">
                         <button
                           type="button"
                           onClick={() => moveCarousel(section._id, "prev", section.products.length)}
@@ -1703,7 +1703,7 @@ ${checkout.storeMessage || "Sem observação"}
           <div
             key={item._id}
             className="
-              min-w-[85%]
+              min-w-[82%]
               snap-center
               flex-shrink-0
             "
