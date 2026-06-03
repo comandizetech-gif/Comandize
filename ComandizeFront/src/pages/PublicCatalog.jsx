@@ -1662,12 +1662,13 @@ ${checkout.storeMessage || "Sem observação"}
                     className="
                       w-32
                       md:w-44
-                      h-auto
-                      object-contain
+                      h-full
+                      object-cover
                       object-center
                       bg-white
                       shrink-0
-                      p-2
+                      p-0
+                      self-stretch
                     "
                   />
                 )}
