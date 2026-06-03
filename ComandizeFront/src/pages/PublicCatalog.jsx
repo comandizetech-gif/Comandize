@@ -197,6 +197,7 @@ function PublicCatalog() {
   const [config, setConfig] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [sections, setSections] = useState([]);
+  const [carouselPages, setCarouselPages] = useState({});
   const [loading, setLoading] = useState(true);
   const [showHours, setShowHours] = useState(false);
   const [showBenefitsPage, setShowBenefitsPage] = useState(false);
@@ -952,6 +953,36 @@ ${checkout.storeMessage || "Sem observação"}
     }
   }, []);
 
+  const getCarouselPage = (sectionId) => {
+    return Number(carouselPages[sectionId] || 0);
+  };
+
+  const getCarouselPageSize = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      return 1;
+    }
+
+    return 3;
+  };
+
+  const moveCarousel = (sectionId, direction, totalProducts) => {
+    const pageSize = getCarouselPageSize();
+    const maxPage = Math.max(0, Math.ceil(totalProducts / pageSize) - 1);
+
+    setCarouselPages((old) => {
+      const currentPage = Number(old[sectionId] || 0);
+      const nextPage =
+        direction === "next"
+          ? Math.min(maxPage, currentPage + 1)
+          : Math.max(0, currentPage - 1);
+
+      return {
+        ...old,
+        [sectionId]: nextPage,
+      };
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white text-[#20242b] flex items-center justify-center font-[Arial]">
@@ -1460,7 +1491,7 @@ ${checkout.storeMessage || "Sem observação"}
       )}
 
       <main className="p-5 md:p-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+        <div className="space-y-8">
           <div className="space-y-12">
             {sections.map((section) => {
               const isCarousel = section.displayMode === "CAROUSEL";
@@ -1474,7 +1505,7 @@ ${checkout.storeMessage || "Sem observação"}
                   return (
                     <div
                       key={item._id}
-                      className="min-w-[245px] max-w-[245px] sm:min-w-[275px] sm:max-w-[275px] md:min-w-[305px] md:max-w-[305px] bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden relative flex flex-col min-h-[430px]"
+                      className="w-full bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden relative flex flex-col min-h-[430px]"
                     >
                       <div className="w-full h-52 sm:h-56 md:h-60 bg-zinc-100 overflow-hidden">
                         {product.image ? (
@@ -1576,10 +1607,44 @@ ${checkout.storeMessage || "Sem observação"}
                       {section.name}
                     </h2>
 
-                    {isCarousel && (
-                      <span className="hidden md:inline-flex text-xs font-black text-zinc-500 bg-zinc-100 px-3 py-2 rounded-full">
-                        Arraste para o lado →
-                      </span>
+                    {isCarousel && section.products.length > 0 && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => moveCarousel(section._id, "prev", section.products.length)}
+                          disabled={getCarouselPage(section._id) === 0}
+                          className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white border border-zinc-200 text-red-600 shadow-sm font-black disabled:opacity-35 disabled:cursor-not-allowed hover:bg-red-50 transition"
+                          aria-label="Produtos anteriores"
+                        >
+                          ‹
+                        </button>
+
+                        <span className="hidden sm:inline-flex text-xs font-black text-zinc-500 bg-zinc-100 px-3 py-2 rounded-full">
+                          {Math.min(
+                            getCarouselPage(section._id) * getCarouselPageSize() + 1,
+                            section.products.length
+                          )}
+                          -
+                          {Math.min(
+                            (getCarouselPage(section._id) + 1) * getCarouselPageSize(),
+                            section.products.length
+                          )}
+                          {" "}de {section.products.length}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => moveCarousel(section._id, "next", section.products.length)}
+                          disabled={
+                            getCarouselPage(section._id) >=
+                            Math.max(0, Math.ceil(section.products.length / getCarouselPageSize()) - 1)
+                          }
+                          className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-red-600 text-white shadow-sm font-black disabled:opacity-35 disabled:cursor-not-allowed hover:bg-red-700 transition"
+                          aria-label="Próximos produtos"
+                        >
+                          ›
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -1596,10 +1661,38 @@ ${checkout.storeMessage || "Sem observação"}
                   )}
 
                   {isCarousel ? (
-                    <div className="-mx-5 md:mx-0 overflow-x-auto pb-4 px-5 md:px-0 scroll-smooth">
-                      <div className="flex gap-5 w-max">
-                        {section.products.map((item) => renderProductCard(item, true))}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => moveCarousel(section._id, "prev", section.products.length)}
+                        disabled={getCarouselPage(section._id) === 0}
+                        className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-20 w-12 h-12 rounded-full bg-white border border-zinc-200 text-red-600 shadow-xl font-black text-3xl items-center justify-center disabled:opacity-0 disabled:pointer-events-none hover:bg-red-50 transition"
+                        aria-label="Produtos anteriores"
+                      >
+                        ‹
+                      </button>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 overflow-hidden">
+                        {section.products
+                          .slice(
+                            getCarouselPage(section._id) * getCarouselPageSize(),
+                            getCarouselPage(section._id) * getCarouselPageSize() + getCarouselPageSize()
+                          )
+                          .map((item) => renderProductCard(item, true))}
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => moveCarousel(section._id, "next", section.products.length)}
+                        disabled={
+                          getCarouselPage(section._id) >=
+                          Math.max(0, Math.ceil(section.products.length / getCarouselPageSize()) - 1)
+                        }
+                        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-20 w-12 h-12 rounded-full bg-red-600 text-white shadow-xl font-black text-3xl items-center justify-center disabled:opacity-0 disabled:pointer-events-none hover:bg-red-700 transition"
+                        aria-label="Próximos produtos"
+                      >
+                        ›
+                      </button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1616,7 +1709,7 @@ ${checkout.storeMessage || "Sem observação"}
           </div>
 
           {!customer && (
-            <aside className="lg:sticky lg:top-6">
+            <aside className="max-w-md mx-auto">
               <LoyaltyPreview onClick={handleOpenRegister} />
             </aside>
           )}
