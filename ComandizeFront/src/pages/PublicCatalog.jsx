@@ -1533,19 +1533,22 @@ ${checkout.storeMessage || "Sem observação"}
                       key={item._id}
                       className="
                         w-full
+                        max-w-[245px]
+                        md:max-w-none
+                        mx-auto
                         bg-white
                         border border-zinc-200
-                        shadow-lg
-                        rounded-[28px]
+                        shadow-md
+                        rounded-[22px]
                         overflow-hidden
                         relative
                         flex
                         flex-col
-                        min-h-[520px]
-                        md:min-h-[500px]
+                        min-h-[355px]
+                        md:min-h-[390px]
                       "
                     >
-                      <div className="w-full h-[300px] md:h-[260px] bg-white overflow-hidden p-3">
+                      <div className="w-full h-[150px] sm:h-[170px] md:h-[190px] bg-white overflow-hidden p-2">
                         {product.image ? (
                           <img
                             src={getAssetUrl(product.image)}
@@ -1555,7 +1558,7 @@ ${checkout.storeMessage || "Sem observação"}
                               h-full
                               object-contain
                               object-center
-                              rounded-2xl
+                              rounded-xl
                               bg-white
                             "
                           />
@@ -1566,8 +1569,8 @@ ${checkout.storeMessage || "Sem observação"}
                         )}
                       </div>
 
-                      <div className="p-6 flex flex-col flex-1">
-                        <h3 className="text-2xl md:text-xl font-black text-[#20242b] leading-tight">
+                      <div className="p-4 md:p-5 flex flex-col flex-1 min-w-0">
+                        <h3 className="text-base md:text-xl font-black text-[#20242b] leading-tight line-clamp-2">
                           {product.name}
                         </h3>
 
@@ -1575,12 +1578,12 @@ ${checkout.storeMessage || "Sem observação"}
                           <p
                             className="
                               text-zinc-500
-                              text-lg
+                              text-xs
                               md:text-sm
-                              mt-4
-                              leading-relaxed
-                              max-h-[104px]
-                              md:max-h-[86px]
+                              mt-2
+                              leading-snug
+                              max-h-[64px]
+                              md:max-h-[74px]
                               overflow-hidden
                             "
                           >
@@ -1594,8 +1597,8 @@ ${checkout.storeMessage || "Sem observação"}
                           </p>
                         )}
 
-                        <div className="mt-auto pt-6 pr-20">
-                          <p className="text-red-600 text-4xl md:text-3xl font-black leading-tight">
+                        <div className="mt-auto pt-3 pr-12 md:pr-16">
+                          <p className="text-red-600 text-2xl md:text-3xl font-black leading-tight">
                             {formatMoney(getProductPrice(product, customer))}
                           </p>
                         </div>
@@ -1605,18 +1608,18 @@ ${checkout.storeMessage || "Sem observação"}
                         onClick={() => openItemModal(item)}
                         className="
                           absolute
-                          right-6
-                          bottom-6
+                          right-4
+                          bottom-4
                           bg-red-600
                           hover:bg-red-700
                           text-white
-                          w-16
-                          h-16
+                          w-12
+                          h-12
                           md:w-14
                           md:h-14
                           rounded-full
                           font-black
-                          text-4xl
+                          text-3xl md:text-4xl
                           shadow-xl
                           flex
                           items-center
@@ -1720,6 +1723,7 @@ ${checkout.storeMessage || "Sem observação"}
               };
 
 
+              return (
                 <section key={section._id}>
                   <div className="flex items-end justify-between gap-3 mb-2">
                     <h2 className="text-3xl md:text-4xl font-black text-red-600">
@@ -1786,7 +1790,7 @@ ${checkout.storeMessage || "Sem observação"}
       <div
         className="
           flex
-          gap-4
+          gap-3
           overflow-x-auto
           snap-x
           snap-mandatory
@@ -1798,7 +1802,8 @@ ${checkout.storeMessage || "Sem observação"}
           <div
             key={item._id}
             className="
-              min-w-[82%]
+              min-w-[68%]
+              max-w-[245px]
               snap-center
               flex-shrink-0
             "
@@ -1847,7 +1852,7 @@ ${checkout.storeMessage || "Sem observação"}
         ‹
       </button>
 
-      <div className="grid grid-cols-3 gap-5 overflow-hidden">
+      <div className="grid grid-cols-3 gap-4 overflow-hidden items-start">
         {section.products
           .slice(
             getCarouselPage(section._id) * 3,
