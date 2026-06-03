@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaCog } from "react-icons/fa";
+import { FaArrowDown, FaArrowUp, FaCog, FaImage, FaTrash } from "react-icons/fa";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://comandize.com.br";
@@ -165,6 +165,101 @@ function CatalogManager() {
       await loadSections();
     } catch {
       setMessage("Erro ao remover produto.");
+    } finally {
+      setTimeout(() => setLoadingAction(false), 700);
+    }
+  };
+
+
+  const imageToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const uploadSectionBanner = async (sectionId, file) => {
+    if (!file || loadingAction) return;
+
+    if (!file.type.startsWith("image/")) {
+      setMessage("Escolha uma imagem válida para o banner.");
+      return;
+    }
+
+    setLoadingAction(true);
+
+    try {
+      const sectionBannerImage = await imageToBase64(file);
+
+      const response = await fetch(`${API_URL}/sections/${sectionId}/banner`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ sectionBannerImage }),
+      });
+
+      const data = await response.json();
+      setMessage(data.message || "Banner promocional salvo.");
+
+      if (response.ok) {
+        await loadSections();
+      }
+    } catch {
+      setMessage("Erro ao salvar banner promocional.");
+    } finally {
+      setTimeout(() => setLoadingAction(false), 700);
+    }
+  };
+
+  const removeSectionBanner = async (sectionId) => {
+    if (loadingAction) return;
+
+    const confirmRemove = window.confirm("Remover banner promocional desta faixa?");
+    if (!confirmRemove) return;
+
+    setLoadingAction(true);
+
+    try {
+      const response = await fetch(`${API_URL}/sections/${sectionId}/banner`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ sectionBannerImage: "" }),
+      });
+
+      const data = await response.json();
+      setMessage(data.message || "Banner promocional removido.");
+
+      if (response.ok) {
+        await loadSections();
+      }
+    } catch {
+      setMessage("Erro ao remover banner promocional.");
+    } finally {
+      setTimeout(() => setLoadingAction(false), 700);
+    }
+  };
+
+  const moveSection = async (sectionId, direction) => {
+    if (loadingAction) return;
+
+    setLoadingAction(true);
+
+    try {
+      const response = await fetch(`${API_URL}/sections/${sectionId}/move`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ direction }),
+      });
+
+      const data = await response.json();
+      setMessage(data.message || "Posição da faixa atualizada.");
+
+      if (response.ok) {
+        await loadSections();
+      }
+    } catch {
+      setMessage("Erro ao mover faixa.");
     } finally {
       setTimeout(() => setLoadingAction(false), 700);
     }
@@ -366,7 +461,7 @@ function CatalogManager() {
         </div>
       </div>
 
-      {sections.map((section) => (
+      {sections.map((section, sectionIndex) => (
         <div
           key={section._id}
           className="bg-white border border-gray-200 shadow-sm rounded-2xl p-4 sm:p-6"
@@ -382,6 +477,28 @@ function CatalogManager() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
+              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => moveSection(section._id, "up")}
+                  disabled={loadingAction || sectionIndex === 0}
+                  className="bg-white border border-gray-200 hover:bg-orange-50 text-gray-700 px-4 py-2 rounded-xl font-black disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  <FaArrowUp />
+                  Subir
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => moveSection(section._id, "down")}
+                  disabled={loadingAction || sectionIndex === sections.length - 1}
+                  className="bg-white border border-gray-200 hover:bg-orange-50 text-gray-700 px-4 py-2 rounded-xl font-black disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  <FaArrowDown />
+                  Descer
+                </button>
+              </div>
+
               <div className="grid grid-cols-2 bg-gray-100 border border-gray-200 rounded-xl p-1 w-full sm:w-auto">
                 <button
                   type="button"
@@ -417,6 +534,56 @@ function CatalogManager() {
                 Excluir Categoria
               </button>
             </div>
+          </div>
+
+
+          <div className="mb-5 bg-orange-50 border border-orange-100 rounded-2xl p-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <div>
+                <p className="font-black text-gray-800 flex items-center gap-2">
+                  <FaImage className="text-orange-500" />
+                  Banner promocional desta faixa
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Aparece no catálogo público acima dos produtos desta categoria. Use uma arte horizontal pequena.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <label className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white px-4 py-3 rounded-xl font-black text-sm text-center">
+                  Enviar banner
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={loadingAction}
+                    onChange={(e) => uploadSectionBanner(section._id, e.target.files?.[0])}
+                  />
+                </label>
+
+                {section.sectionBannerImage && (
+                  <button
+                    type="button"
+                    onClick={() => removeSectionBanner(section._id)}
+                    disabled={loadingAction}
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <FaTrash />
+                    Remover
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {section.sectionBannerImage && (
+              <div className="mt-4 rounded-2xl overflow-hidden border border-orange-100 bg-white">
+                <img
+                  src={section.sectionBannerImage}
+                  alt={`Banner promocional ${section.name}`}
+                  className="w-full max-h-40 object-cover object-center"
+                />
+              </div>
+            )}
           </div>
 
           <div className="relative mb-5">

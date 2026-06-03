@@ -350,9 +350,12 @@ export const listProducts = async (req, res) => {
     ];
 
     if (all === "true") {
+      const perPageForAll = Math.min(5, Math.max(1, Number(limit) || 5));
+
       const products = await Product.find(filter)
         .populate(populateOptions)
         .sort({ name: 1 })
+        .limit(perPageForAll)
         .select("name sku stock measureType salePrice entryPrice recipeEnabled recipeItems recipeSourceProduct recipeDeductQuantity");
 
       return res.json(products);

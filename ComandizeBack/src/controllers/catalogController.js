@@ -75,12 +75,17 @@ export const getPublicCatalog = async (req, res) => {
     );
 
     if (!store) {
-      return res.status(404).json({ message: "Catálogo não encontrado ou loja inativa." });
+      return res.status(404).json({
+        message: "Catálogo não encontrado ou loja inativa.",
+      });
     }
 
     const config = await StoreConfig.findOne({ user: store._id });
 
-    if (config?.manualCatalogStatus !== "AUTO" && config.manualCatalogDate !== todayKeyString()) {
+    if (
+      config?.manualCatalogStatus !== "AUTO" &&
+      config.manualCatalogDate !== todayKeyString()
+    ) {
       config.manualCatalogStatus = "AUTO";
       config.manualCatalogDate = "";
       await config.save();
@@ -91,18 +96,25 @@ export const getPublicCatalog = async (req, res) => {
 
     const sections = await CatalogSection.find({ user: store._id })
       .populate("products.product")
-      .sort({ createdAt: 1 });
+      .sort({ order: 1, createdAt: 1 });
 
     const visibleSections = sections
       .map((section) => {
         const products = section.products
-          .filter((item) => item.visible && item.product && item.availableDays.includes(today))
+          .filter(
+            (item) =>
+              item.visible &&
+              item.product &&
+              item.availableDays.includes(today)
+          )
           .sort((a, b) => b.priority - a.priority);
 
         return {
           _id: section._id,
           name: section.name,
           displayMode: section.displayMode || "NORMAL",
+          order: Number(section.order || 0),
+          sectionBannerImage: section.sectionBannerImage || "",
           products,
         };
       })
@@ -118,6 +130,9 @@ export const getPublicCatalog = async (req, res) => {
       sections: visibleSections,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Erro ao carregar catálogo.", error: error.message });
+    return res.status(500).json({
+      message: "Erro ao carregar catálogo.",
+      error: error.message,
+    });
   }
 };

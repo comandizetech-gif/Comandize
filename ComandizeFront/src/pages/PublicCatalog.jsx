@@ -1470,14 +1470,64 @@ ${checkout.storeMessage || "Sem observação"}
 
                 if (!product) return null;
 
+                if (carousel) {
+                  return (
+                    <div
+                      key={item._id}
+                      className="min-w-[245px] max-w-[245px] sm:min-w-[275px] sm:max-w-[275px] md:min-w-[305px] md:max-w-[305px] bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden relative flex flex-col min-h-[430px]"
+                    >
+                      <div className="w-full h-52 sm:h-56 md:h-60 bg-zinc-100 overflow-hidden">
+                        {product.image ? (
+                          <img
+                            src={getAssetUrl(product.image)}
+                            alt={product.name}
+                            className="w-full h-full object-cover object-center"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-400 font-black">
+                            Sem imagem
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-4 md:p-5 flex flex-col flex-1">
+                        <h3 className="text-lg md:text-xl font-black text-[#20242b] line-clamp-2 pr-1">
+                          {product.name}
+                        </h3>
+
+                        {item.description && (
+                          <p className="text-zinc-500 text-sm mt-2 line-clamp-3">
+                            {item.description}
+                          </p>
+                        )}
+
+                        {customer && Number(product.clientPrice || 0) > 0 && (
+                          <p className="text-xs font-bold text-green-600 mt-2">
+                            Preço especial para cliente
+                          </p>
+                        )}
+
+                        <div className="mt-auto pt-5 pr-14">
+                          <p className="text-red-600 text-2xl md:text-3xl font-black leading-tight">
+                            {formatMoney(getProductPrice(product, customer))}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => openItemModal(item)}
+                        className="absolute right-4 bottom-4 bg-red-600 hover:bg-red-700 text-white w-12 h-12 md:w-14 md:h-14 rounded-full font-black text-3xl shadow-xl flex items-center justify-center hover:scale-110 transition"
+                      >
+                        +
+                      </button>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={item._id}
-                    className={`${
-                      carousel
-                        ? "min-w-[285px] max-w-[285px] md:min-w-[330px] md:max-w-[330px]"
-                        : ""
-                    } bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden flex relative min-h-[160px]`}
+                    className="bg-white border border-zinc-200 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-3xl overflow-hidden flex relative min-h-[160px]"
                   >
                     {product.image && (
                       <img
@@ -1534,6 +1584,16 @@ ${checkout.storeMessage || "Sem observação"}
                   </div>
 
                   <div className="h-1 bg-red-600 w-24 mb-6 rounded-full" />
+
+                  {section.sectionBannerImage && (
+                    <div className="mb-6 rounded-3xl overflow-hidden border border-red-100 bg-white shadow-sm">
+                      <img
+                        src={getAssetUrl(section.sectionBannerImage)}
+                        alt={`Banner promocional ${section.name}`}
+                        className="w-full h-28 sm:h-36 md:h-44 object-cover object-center"
+                      />
+                    </div>
+                  )}
 
                   {isCarousel ? (
                     <div className="-mx-5 md:mx-0 overflow-x-auto pb-4 px-5 md:px-0 scroll-smooth">
@@ -1913,7 +1973,7 @@ ${checkout.storeMessage || "Sem observação"}
 
                 <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-50 shadow-sm">
                   <img
-                    src="/icons/whatsaploja.png"
+                    src="/icons/whatsaploja.jpeg"
                     alt="Mini tutorial para finalizar o pedido pelo WhatsApp"
                     className="w-full h-auto object-cover block"
                   />

@@ -66,13 +66,35 @@ const normalizeDisplayMode = (value) => {
   return validDisplayModes.includes(mode) ? mode : "NORMAL";
 };
 
+const normalizeImage = (value) => {
+  const image = String(value || "").trim();
+  return image.length > 0 ? image : "";
+};
+
+const normalizeSectionOrders = async (userId) => {
+  const sections = await CatalogSection.find({ user: userId }).sort({
+    order: 1,
+    createdAt: 1,
+  });
+
+  for (let index = 0; index < sections.length; index += 1) {
+    if (sections[index].order !== index) {
+      sections[index].order = index;
+      await sections[index].save();
+    }
+  }
+
+  return sections;
+};
+
+
 export const listSections = async (req, res) => {
   try {
     const userId = getUserId(req);
 
     const sections = await CatalogSection.find({ user: userId })
       .populate("products.product")
-      .sort({ createdAt: 1 });
+      .sort({ order: 1, createdAt: 1 });
 
     return res.json(sections);
   } catch (error) {
@@ -93,10 +115,16 @@ export const createSection = async (req, res) => {
       return res.status(400).json({ message: "Informe o nome da categoria." });
     }
 
+    const lastSection = await CatalogSection.findOne({ user: userId })
+      .sort({ order: -1, createdAt: -1 })
+      .select("order");
+
     const section = await CatalogSection.create({
       user: userId,
       name,
       displayMode,
+      order: Number(lastSection?.order || 0) + 1,
+      sectionBannerImage: "",
       products: [],
     });
 
@@ -138,6 +166,87 @@ export const updateSectionDisplayMode = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Erro ao alterar modo da categoria.",
+      error: error.message,
+    });
+  }
+};
+
+
+export const updateSectionBanner = async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { sectionId } = req.params;
+    const sectionBannerImage = normalizeImage(req.body.sectionBannerImage);
+
+    const section = await CatalogSection.findOneAndUpdate(
+      { _id: sectionId, user: userId },
+      { sectionBannerImage },
+      { new: true }
+    ).populate("products.product");
+
+    if (!section) {
+      return res.status(404).json({ message: "Categoria não encontrada." });
+    }
+
+    return res.json({
+      message: sectionBannerImage
+        ? "Banner promocional da faixa salvo."
+        : "Banner promocional da faixa removido.",
+      section,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erro ao salvar banner promocional da faixa.",
+      error: error.message,
+    });
+  }
+};
+
+export const moveSection = async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { sectionId } = req.params;
+    const direction = req.body.direction === "down" ? "down" : "up";
+
+    const sections = await normalizeSectionOrders(userId);
+    const currentIndex = sections.findIndex(
+      (section) => String(section._id) === String(sectionId)
+    );
+
+    if (currentIndex === -1) {
+      return res.status(404).json({ message: "Categoria não encontrada." });
+    }
+
+    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (nextIndex < 0 || nextIndex >= sections.length) {
+      return res.json({
+        message:
+          direction === "up"
+            ? "Esta faixa já está no topo."
+            : "Esta faixa já está no final.",
+      });
+    }
+
+    const currentSection = sections[currentIndex];
+    const nextSection = sections[nextIndex];
+
+    const currentOrder = currentSection.order;
+    currentSection.order = nextSection.order;
+    nextSection.order = currentOrder;
+
+    await currentSection.save();
+    await nextSection.save();
+
+    return res.json({
+      message:
+        direction === "up"
+          ? "Faixa movida para cima."
+          : "Faixa movida para baixo.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erro ao mover faixa.",
       error: error.message,
     });
   }

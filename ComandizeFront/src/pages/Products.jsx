@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://comandize.com.br";
@@ -115,6 +115,9 @@ function emptyForm() {
 function Products() {
   const [products, setProducts] = useState([]);
   const [recipeProducts, setRecipeProducts] = useState([]);
+  const [recipeSearch, setRecipeSearch] = useState({});
+  const [recipeResults, setRecipeResults] = useState({});
+  const [recipeLoading, setRecipeLoading] = useState({});
   const [types, setTypes] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -240,19 +243,12 @@ function Products() {
   };
 
   const loadRecipeProducts = async () => {
-    try {
-      const response = await fetch(`${API_URL}?all=true`, {
-        headers: getHeaders(),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setRecipeProducts(Array.isArray(data) ? data : []);
-      }
-    } catch {
-      setRecipeProducts([]);
-    }
+    // Não carrega todos os produtos para receita.
+    // A busca agora é feita sob demanda e limitada a 5 resultados.
+    setRecipeProducts([]);
+    setRecipeSearch({});
+    setRecipeResults({});
+    setRecipeLoading({});
   };
 
   const loadTypes = async () => {
@@ -391,6 +387,61 @@ function Products() {
     setEditingProduct(product);
     setShowForm(true);
 
+    const nextRecipeItems =
+      Array.isArray(product.recipeItems) && product.recipeItems.length > 0
+        ? product.recipeItems.map((item) => ({
+            product: item.product?._id || item.product || "",
+            quantity: item.quantity || "1",
+          }))
+        : product.recipeSourceProduct
+        ? [
+            {
+              product: product.recipeSourceProduct?._id || product.recipeSourceProduct || "",
+              quantity: product.recipeDeductQuantity || "1",
+            },
+          ]
+        : [{ product: "", quantity: "1" }];
+
+    const selectedRecipeProducts = [];
+
+    if (Array.isArray(product.recipeItems)) {
+      product.recipeItems.forEach((item) => {
+        if (item.product?._id) selectedRecipeProducts.push(item.product);
+      });
+    }
+
+    if (product.recipeSourceProduct?._id) {
+      selectedRecipeProducts.push(product.recipeSourceProduct);
+    }
+
+    setRecipeProducts((old) => {
+      const merged = [...old];
+
+      selectedRecipeProducts.forEach((selected) => {
+        if (!merged.some((item) => String(item._id) === String(selected._id))) {
+          merged.push(selected);
+        }
+      });
+
+      return merged;
+    });
+
+    setRecipeSearch(
+      nextRecipeItems.reduce((acc, item, index) => {
+        const selected = selectedRecipeProducts.find(
+          (productItem) => String(productItem._id) === String(item.product)
+        );
+
+        if (selected) {
+          acc[index] = `${selected.name} • SKU ${selected.sku}`;
+        }
+
+        return acc;
+      }, {})
+    );
+
+    setRecipeResults({});
+
     setForm({
       name: product.name || "",
       sku: product.sku || "",
@@ -409,20 +460,7 @@ function Products() {
       active: product.active !== false,
       priority: product.priority || "",
       recipeEnabled: Boolean(product.recipeEnabled),
-      recipeItems:
-        Array.isArray(product.recipeItems) && product.recipeItems.length > 0
-          ? product.recipeItems.map((item) => ({
-              product: item.product?._id || item.product || "",
-              quantity: item.quantity || "1",
-            }))
-          : product.recipeSourceProduct
-          ? [
-              {
-                product: product.recipeSourceProduct?._id || product.recipeSourceProduct || "",
-                quantity: product.recipeDeductQuantity || "1",
-              },
-            ]
-          : [{ product: "", quantity: "1" }],
+      recipeItems: nextRecipeItems,
     });
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -505,11 +543,73 @@ function Products() {
     loadProducts(nextPage, appliedSearch);
   };
 
-  const recipeOptions = useMemo(() => {
-    return recipeProducts.filter(
-      (product) => !editingProduct || String(product._id) !== String(editingProduct._id)
-    );
-  }, [recipeProducts, editingProduct]);
+  const getRecipeProductById = (productId) => {
+    return recipeProducts.find((product) => String(product._id) === String(productId));
+  };
+
+  const upsertRecipeProduct = (product) => {
+    if (!product?._id) return;
+
+    setRecipeProducts((old) => {
+      const exists = old.some((item) => String(item._id) === String(product._id));
+      return exists ? old : [...old, product];
+    });
+  };
+
+  const searchRecipeProducts = async (index, value) => {
+    setRecipeSearch((old) => ({ ...old, [index]: value }));
+
+    if (String(value || "").trim().length < 2) {
+      setRecipeResults((old) => ({ ...old, [index]: [] }));
+      return;
+    }
+
+    setRecipeLoading((old) => ({ ...old, [index]: true }));
+
+    try {
+      const params = new URLSearchParams({
+        all: "true",
+        search: value.trim(),
+        limit: "5",
+      });
+
+      const response = await fetch(`${API_URL}?${params.toString()}`, {
+        headers: getHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      const list = Array.isArray(data) ? data : data.products || [];
+
+      const filtered = list
+        .filter((product) => !editingProduct || String(product._id) !== String(editingProduct._id))
+        .slice(0, 5);
+
+      setRecipeResults((old) => ({ ...old, [index]: filtered }));
+    } catch {
+      setRecipeResults((old) => ({ ...old, [index]: [] }));
+    } finally {
+      setRecipeLoading((old) => ({ ...old, [index]: false }));
+    }
+  };
+
+  const selectRecipeProduct = (index, product) => {
+    upsertRecipeProduct(product);
+    updateRecipeItem(index, "product", product._id);
+
+    setRecipeSearch((old) => ({
+      ...old,
+      [index]: `${product.name} • SKU ${product.sku}`,
+    }));
+
+    setRecipeResults((old) => ({ ...old, [index]: [] }));
+  };
+
 
   const updateRecipeItem = (index, field, value) => {
     setForm((old) => ({
@@ -535,6 +635,18 @@ function Products() {
           ? [{ product: "", quantity: "1" }]
           : old.recipeItems.filter((_, itemIndex) => itemIndex !== index),
     }));
+
+    setRecipeSearch((old) => {
+      const next = { ...old };
+      delete next[index];
+      return next;
+    });
+
+    setRecipeResults((old) => {
+      const next = { ...old };
+      delete next[index];
+      return next;
+    });
   };
 
   return (
@@ -701,19 +813,65 @@ function Products() {
                     key={index}
                     className="grid grid-cols-1 md:grid-cols-[1fr_180px_110px] gap-3"
                   >
-                    <select
-                      value={recipeItem.product}
-                      onChange={(e) => updateRecipeItem(index, "product", e.target.value)}
-                      className="bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 outline-none text-[#374151] placeholder:text-[#9ca3af]"
-                      required={form.recipeEnabled}
-                    >
-                      <option value="">Selecione o produto origem. Ex: Coxão mole peça</option>
-                      {recipeOptions.map((product) => (
-                        <option key={product._id} value={product._id}>
-                          {product.name} • SKU {product.sku} • Estoque {formatNumber(product.stock)}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={
+                          recipeSearch[index] ??
+                          (getRecipeProductById(recipeItem.product)
+                            ? `${getRecipeProductById(recipeItem.product).name} • SKU ${getRecipeProductById(recipeItem.product).sku}`
+                            : "")
+                        }
+                        onChange={(e) => {
+                          updateRecipeItem(index, "product", "");
+                          searchRecipeProducts(index, e.target.value);
+                        }}
+                        placeholder="Buscar produto origem por nome ou SKU. Ex: Coxão mole ou 25"
+                        className="w-full bg-[#f9fafb] border border-[#d1d5db] rounded-xl p-3 outline-none text-[#374151] placeholder:text-[#9ca3af]"
+                        required={form.recipeEnabled}
+                      />
+
+                      {recipeItem.product && getRecipeProductById(recipeItem.product) && (
+                        <p className="text-xs text-green-600 font-bold mt-1">
+                          Selecionado: {getRecipeProductById(recipeItem.product).name} • SKU {getRecipeProductById(recipeItem.product).sku}
+                        </p>
+                      )}
+
+                      {recipeLoading[index] && (
+                        <div className="absolute z-30 mt-2 w-full bg-white border border-[#e5e7eb] rounded-xl p-3 text-sm text-[#6b7280] shadow-xl">
+                          Buscando...
+                        </div>
+                      )}
+
+                      {!recipeLoading[index] && recipeResults[index]?.length > 0 && (
+                        <div className="absolute z-30 mt-2 w-full bg-white border border-[#e5e7eb] rounded-xl overflow-hidden shadow-xl">
+                          {recipeResults[index].map((product) => (
+                            <button
+                              key={product._id}
+                              type="button"
+                              onClick={() => selectRecipeProduct(index, product)}
+                              className="w-full text-left px-4 py-3 hover:bg-orange-50 border-b border-[#f3f4f6] last:border-b-0"
+                            >
+                              <strong className="block text-[#374151]">
+                                {product.name}
+                              </strong>
+                              <small className="text-[#6b7280]">
+                                SKU {product.sku} • Estoque {formatNumber(product.stock)}
+                              </small>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {!recipeLoading[index] &&
+                        String(recipeSearch[index] || "").trim().length >= 2 &&
+                        recipeResults[index]?.length === 0 &&
+                        !recipeItem.product && (
+                          <div className="absolute z-30 mt-2 w-full bg-white border border-[#e5e7eb] rounded-xl p-3 text-sm text-[#6b7280] shadow-xl">
+                            Nenhum produto encontrado.
+                          </div>
+                        )}
+                    </div>
 
                     <input
                       type="number"

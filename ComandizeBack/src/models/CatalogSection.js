@@ -95,11 +95,23 @@ const catalogSectionSchema = new mongoose.Schema(
       default: "NORMAL",
     },
 
+    order: {
+      type: Number,
+      default: 0,
+    },
+
+    sectionBannerImage: {
+      type: String,
+      default: "",
+    },
+
     products: [catalogItemSchema],
   },
   {
     timestamps: true,
   }
 );
+
+catalogSectionSchema.index({ user: 1, order: 1 });
 
 export default mongoose.model("CatalogSection", catalogSectionSchema);

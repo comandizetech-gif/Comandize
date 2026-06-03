@@ -44,7 +44,17 @@ function Login() {
       }
 
       setMessage("Login realizado com sucesso!");
-      window.location.href = "/login#Delivery";
+
+      /*
+        Força a entrada no painel logo após salvar o token.
+        Antes, quando o usuário já estava em /login#Delivery, o navegador não trocava
+        a página porque a URL praticamente continuava a mesma. Esse reload controlado
+        evita o usuário precisar apertar F5 manualmente.
+      */
+      window.history.replaceState(null, "", "/login#Delivery");
+      setTimeout(() => {
+        window.location.reload();
+      }, 80);
     } catch {
       setMessage("Erro de conexão com o servidor.");
     } finally {
