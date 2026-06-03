@@ -2,6 +2,30 @@ import { useEffect, useState } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://comandize.com.br";
 
+const MAIN_DOMAINS = [
+  "comandize.com.br",
+  "www.comandize.com.br",
+  "localhost",
+  "127.0.0.1",
+];
+
+function isCustomDomainHost() {
+  const host = window.location.hostname.toLowerCase();
+  return !MAIN_DOMAINS.includes(host);
+}
+
+function getCatalogLookupKey() {
+  const pathKey = window.location.pathname.replace(/^\/+|\/+$/g, "");
+
+  if (pathKey) return pathKey;
+
+  if (isCustomDomainHost()) {
+    return window.location.hostname.toLowerCase().replace(/^www\./, "");
+  }
+
+  return "";
+}
+
 function getAssetUrl(path = "") {
   if (!path) return "";
   if (path.startsWith("data:") || path.startsWith("http://") || path.startsWith("https://")) {
@@ -257,7 +281,7 @@ function PublicCatalog() {
     storeMessage: "",
   });
 
-  const catalogUrl = window.location.pathname.replace("/", "");
+  const catalogUrl = getCatalogLookupKey();
 
   const getCatalogHash = () =>
     decodeURIComponent(window.location.hash.replace("#", ""));
@@ -383,7 +407,7 @@ function PublicCatalog() {
 
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/catalog/${catalogUrl}`)
+    fetch(`${API_BASE_URL}/api/catalog/${encodeURIComponent(catalogUrl)}`)
       .then((res) => res.json())
       .then((data) => {
         setStore(data.store);
@@ -1661,40 +1685,126 @@ ${checkout.storeMessage || "Sem observação"}
                   )}
 
                   {isCarousel ? (
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => moveCarousel(section._id, "prev", section.products.length)}
-                        disabled={getCarouselPage(section._id) === 0}
-                        className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-20 w-12 h-12 rounded-full bg-white border border-zinc-200 text-red-600 shadow-xl font-black text-3xl items-center justify-center disabled:opacity-0 disabled:pointer-events-none hover:bg-red-50 transition"
-                        aria-label="Produtos anteriores"
-                      >
-                        ‹
-                      </button>
+  <>
+    {/* MOBILE */}
+    <div className="md:hidden">
+      <div
+        className="
+          flex
+          gap-4
+          overflow-x-auto
+          snap-x
+          snap-mandatory
+          pb-2
+          scrollbar-hide
+        "
+      >
+        {section.products.map((item) => (
+          <div
+            key={item._id}
+            className="
+              min-w-[85%]
+              snap-center
+              flex-shrink-0
+            "
+          >
+            {renderProductCard(item, true)}
+          </div>
+        ))}
+      </div>
+    </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 overflow-hidden">
-                        {section.products
-                          .slice(
-                            getCarouselPage(section._id) * getCarouselPageSize(),
-                            getCarouselPage(section._id) * getCarouselPageSize() + getCarouselPageSize()
-                          )
-                          .map((item) => renderProductCard(item, true))}
-                      </div>
+    {/* DESKTOP */}
+    <div className="hidden md:block relative">
+      <button
+        type="button"
+        onClick={() =>
+          moveCarousel(
+            section._id,
+            "prev",
+            section.products.length
+          )
+        }
+        disabled={getCarouselPage(section._id) === 0}
+        className="
+          absolute
+          left-0
+          top-1/2
+          -translate-y-1/2
+          -translate-x-6
+          z-20
+          w-12
+          h-12
+          rounded-full
+          bg-white
+          border
+          border-zinc-200
+          text-red-600
+          shadow-xl
+          font-black
+          text-3xl
+          flex
+          items-center
+          justify-center
+          disabled:opacity-0
+        "
+      >
+        ‹
+      </button>
 
-                      <button
-                        type="button"
-                        onClick={() => moveCarousel(section._id, "next", section.products.length)}
-                        disabled={
-                          getCarouselPage(section._id) >=
-                          Math.max(0, Math.ceil(section.products.length / getCarouselPageSize()) - 1)
-                        }
-                        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-20 w-12 h-12 rounded-full bg-red-600 text-white shadow-xl font-black text-3xl items-center justify-center disabled:opacity-0 disabled:pointer-events-none hover:bg-red-700 transition"
-                        aria-label="Próximos produtos"
-                      >
-                        ›
-                      </button>
-                    </div>
-                  ) : (
+      <div className="grid grid-cols-3 gap-5 overflow-hidden">
+        {section.products
+          .slice(
+            getCarouselPage(section._id) * 3,
+            getCarouselPage(section._id) * 3 + 3
+          )
+          .map((item) =>
+            renderProductCard(item, true)
+          )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          moveCarousel(
+            section._id,
+            "next",
+            section.products.length
+          )
+        }
+        disabled={
+          getCarouselPage(section._id) >=
+          Math.max(
+            0,
+            Math.ceil(section.products.length / 3) - 1
+          )
+        }
+        className="
+          absolute
+          right-0
+          top-1/2
+          -translate-y-1/2
+          translate-x-6
+          z-20
+          w-12
+          h-12
+          rounded-full
+          bg-red-600
+          text-white
+          shadow-xl
+          font-black
+          text-3xl
+          flex
+          items-center
+          justify-center
+          disabled:opacity-0
+        "
+      >
+        ›
+      </button>
+    </div>
+  </>
+) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {section.products.map((item) => renderProductCard(item))}
                     </div>
